@@ -24,6 +24,13 @@ interface FSyncable<T> {
 }
 
 /**
+ * 如果[FSyncable]正在同步中，则会挂起直到同步结束
+ */
+suspend fun FSyncable<*>.awaitIdle() {
+   syncingFlow.first { !it }
+}
+
+/**
  * 调用[FSyncable.sync]时，如果[FSyncable]处于空闲状态，则当前协程会切换到主线程执行[onSync]，
  * 如果执行未完成时又有新协程调用[FSyncable.sync]方法，则新协程会挂起等待结果，
  * 注意：[onSync]中的所有异常都会被捕获，包括[CancellationException]
@@ -31,13 +38,6 @@ interface FSyncable<T> {
 fun <T> FSyncable(
    onSync: suspend () -> T,
 ): FSyncable<T> = SyncableImpl(onSync = onSync)
-
-/**
- * 如果[FSyncable]正在同步中，则会挂起直到同步结束
- */
-suspend fun FSyncable<*>.awaitIdle() {
-   syncingFlow.first { !it }
-}
 
 private class SyncableImpl<T>(
    private val onSync: suspend () -> T,
