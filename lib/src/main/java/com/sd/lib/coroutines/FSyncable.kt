@@ -71,12 +71,11 @@ private class SyncableImpl<T>(
                   runCatching {
                      coroutineScope { onSync() }
                   }
-               }.onSuccess { data ->
-                  _continuations.resumeAll(Result.success(data))
                }.onFailure { error ->
                   /** 只检查[ReSyncException]，把其他异常当作普通异常，包括[CancellationException] */
                   if (error is ReSyncException) throw error
-                  _continuations.resumeAll(Result.failure(error))
+               }.also { result ->
+                  _continuations.resumeAll(result)
                }
             } catch (e: Throwable) {
                _continuations.cancelAll()
