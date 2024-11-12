@@ -23,6 +23,10 @@ interface FSyncable<T> {
    suspend fun sync(): Result<T>
 }
 
+suspend fun <T> FSyncable<T>.syncOrThrow(): T {
+   return sync().getOrThrow()
+}
+
 /**
  * 如果[FSyncable]正在同步中，则会挂起直到同步结束
  */
@@ -37,7 +41,7 @@ suspend fun FSyncable<*>.awaitIdle() {
  */
 fun <T> FSyncable(
    onSync: suspend () -> T,
-): FSyncable<T> = SyncableImpl(onSync = onSync)
+): FSyncable<T> = SyncableImpl(onSync)
 
 private class SyncableImpl<T>(
    private val onSync: suspend () -> T,
