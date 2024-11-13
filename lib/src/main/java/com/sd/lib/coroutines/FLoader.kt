@@ -49,6 +49,22 @@ interface FLoader {
    suspend fun cancelLoad()
 }
 
+/**
+ * 如果正在加载中，会抛出[CancellationException]异常取消当前调用[tryLoad]的协程
+ */
+suspend fun <T> FLoader.tryLoad(
+   notifyLoading: Boolean = true,
+   onFinish: () -> Unit = {},
+   onLoad: suspend () -> T,
+): Result<T> {
+   if (isLoading) throw CancellationException()
+   return load(
+      notifyLoading = notifyLoading,
+      onFinish = onFinish,
+      onLoad = onLoad,
+   )
+}
+
 fun FLoader(): FLoader = LoaderImpl()
 
 //-------------------- state --------------------
