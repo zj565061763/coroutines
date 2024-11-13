@@ -44,6 +44,15 @@ interface FLoader {
    ): Result<T>
 
    /**
+    * 如果正在加载中，会抛出[CancellationException]异常取消当前调用[tryLoad]的协程
+    */
+   suspend fun <T> tryLoad(
+      notifyLoading: Boolean = true,
+      onFinish: () -> Unit = {},
+      onLoad: suspend () -> T,
+   ): Result<T>
+
+   /**
     * 取消加载
     */
    suspend fun cancelLoad()
@@ -83,6 +92,35 @@ private class LoaderImpl : FLoader {
       onFinish: () -> Unit,
       onLoad: suspend () -> T,
    ): Result<T> {
+      return loadMutate(
+         notifyLoading = notifyLoading,
+         onFinish = onFinish,
+         onLoad = onLoad,
+      )
+   }
+
+   override suspend fun <T> tryLoad(
+      notifyLoading: Boolean,
+      onFinish: () -> Unit,
+      onLoad: suspend () -> T,
+   ): Result<T> {
+      if (isLoading) throw CancellationException()
+      return loadMutate(
+         notifyLoading = notifyLoading,
+         onFinish = onFinish,
+         onLoad = onLoad,
+      )
+   }
+
+   override suspend fun cancelLoad() {
+      _mutator.cancelAndJoin()
+   }
+
+   private suspend fun <T> loadMutate(
+      notifyLoading: Boolean,
+      onFinish: () -> Unit,
+      onLoad: suspend () -> T,
+   ): Result<T> {
       return _mutator.mutate {
          try {
             if (notifyLoading) {
@@ -106,10 +144,6 @@ private class LoaderImpl : FLoader {
             onFinish()
          }
       }
-   }
-
-   override suspend fun cancelLoad() {
-      _mutator.cancelAndJoin()
    }
 }
 
