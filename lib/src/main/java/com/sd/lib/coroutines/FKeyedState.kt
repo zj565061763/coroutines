@@ -9,10 +9,9 @@ import kotlinx.coroutines.withContext
 
 class FKeyedState<T> {
    private val _holder: MutableMap<String, KeyedFlow<T>> = mutableMapOf()
-   private val _dispatcher = runCatching { Dispatchers.Main.immediate }.getOrDefault(Dispatchers.Main)
 
    suspend fun getOrNull(key: String): T? {
-      return withContext(_dispatcher) {
+      return withContext(Dispatchers.fMain) {
          _holder[key]?.getOrNull()
       }
    }
@@ -46,7 +45,7 @@ class FKeyedState<T> {
       state: T,
       release: Boolean,
    ) {
-      withContext(_dispatcher) {
+      withContext(Dispatchers.fMain) {
          val holder = _holder.getOrPut(key) { KeyedFlow(key, releaseAble = false) }
          holder.emit(state)
          if (release) {
@@ -59,7 +58,7 @@ class FKeyedState<T> {
       key: String,
       block: suspend (T) -> Unit,
    ) {
-      withContext(_dispatcher) {
+      withContext(Dispatchers.fMain) {
          val holder = _holder.getOrPut(key) { KeyedFlow(key, releaseAble = true) }
          holder.collect(block)
       }
