@@ -6,7 +6,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 class FContinuations<T> {
-   private val _holder: MutableCollection<CancellableContinuation<T>> = mutableListOf()
+   private val _holder = mutableListOf<CancellableContinuation<T>>()
 
    suspend fun await(): T {
       return suspendCancellableCoroutine { cont ->
