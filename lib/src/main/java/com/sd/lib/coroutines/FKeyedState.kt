@@ -11,7 +11,7 @@ class FKeyedState<T> {
    private val _holder: MutableMap<String, KeyedFlow<T>> = mutableMapOf()
 
    suspend fun getOrNull(key: String): T? {
-      return withContext(Dispatchers.fMain) {
+      return withContext(Dispatchers.preferImmediateMain) {
          _holder[key]?.getOrNull()
       }
    }
@@ -45,7 +45,7 @@ class FKeyedState<T> {
       state: T,
       release: Boolean,
    ) {
-      withContext(Dispatchers.fMain) {
+      withContext(Dispatchers.Main) {
          val holder = _holder.getOrPut(key) { KeyedFlow(key, releaseAble = false) }
          holder.emit(state)
          if (release) {
@@ -58,7 +58,7 @@ class FKeyedState<T> {
       key: String,
       block: suspend (T) -> Unit,
    ) {
-      withContext(Dispatchers.fMain) {
+      withContext(Dispatchers.preferImmediateMain) {
          val holder = _holder.getOrPut(key) { KeyedFlow(key, releaseAble = true) }
          holder.collect(block)
       }
