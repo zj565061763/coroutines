@@ -2,6 +2,7 @@ package com.sd.demo.coroutines
 
 import app.cash.turbine.test
 import com.sd.lib.coroutines.FLoader
+import com.sd.lib.coroutines.awaitIdle
 import com.sd.lib.coroutines.tryLoad
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -10,10 +11,12 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.util.concurrent.atomic.AtomicInteger
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LoaderTest {
@@ -230,5 +233,28 @@ class LoaderTest {
       }
 
       job.cancelAndJoin()
+   }
+
+   @Test
+   fun `test awaitIdle`() = runTest {
+      val loader = FLoader()
+
+      launch {
+         loader.load { delay(5_000) }
+      }.also {
+         runCurrent()
+      }
+
+      val count = AtomicInteger(0)
+      launch {
+         count.incrementAndGet()
+         loader.awaitIdle()
+         count.incrementAndGet()
+      }.also {
+         runCurrent()
+         assertEquals(1, count.get())
+         advanceUntilIdle()
+         assertEquals(2, count.get())
+      }
    }
 }
