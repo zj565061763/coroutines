@@ -138,13 +138,14 @@ class SyncableTest {
 
       val count = AtomicInteger(0)
       launch {
+         count.incrementAndGet()
          syncable.awaitIdle()
          count.incrementAndGet()
       }.also {
          runCurrent()
-         assertEquals(0, count.get())
-         advanceUntilIdle()
          assertEquals(1, count.get())
+         advanceUntilIdle()
+         assertEquals(2, count.get())
       }
    }
 
