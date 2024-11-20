@@ -2,9 +2,11 @@ package com.sd.demo.coroutines
 
 import app.cash.turbine.test
 import com.sd.lib.coroutines.FLoader
+import com.sd.lib.coroutines.tryLoad
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -209,5 +211,24 @@ class LoaderTest {
       loader.cancelLoad()
 
       assertEquals("onLoad|onFinish", listCallback.joinToString("|"))
+   }
+
+   @Test
+   fun `test tryLoad`() = runTest {
+      val loader = FLoader()
+
+      val job = launch {
+         loader.load { delay(Long.MAX_VALUE) }
+      }.also {
+         runCurrent()
+      }
+
+      runCatching {
+         loader.tryLoad { 1 }
+      }.also { result ->
+         assertEquals(true, result.exceptionOrNull() is CancellationException)
+      }
+
+      job.cancelAndJoin()
    }
 }
