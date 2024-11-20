@@ -355,48 +355,71 @@ class SyncableTest {
 
    @Test
    fun `test callback success`() = runTest {
-      val list = mutableListOf<String>()
+      val list = mutableListOf<Any?>()
       val syncable = FSyncable(
          onStart = {
             list.add("onStart")
          },
          onFinish = { e ->
-            if (e != null) {
-               list.add("onError")
-            } else {
-               list.add("onSuccess")
-            }
+            list.add("onFinish")
+            list.add(e)
          },
       ) {
          delay(5_000)
       }
 
-      val result = syncable.sync()
-      assertEquals(true, result.isSuccess)
-      assertEquals("onStart|onSuccess", list.joinToString("|"))
+      syncable.sync()
+
+      assertEquals("onStart", list[0])
+      assertEquals("onFinish", list[1])
+      assertEquals(null, list[2])
    }
 
    @Test
    fun `test callback error`() = runTest {
-      val list = mutableListOf<String>()
+      val list = mutableListOf<Any?>()
       val syncable = FSyncable(
          onStart = {
             list.add("onStart")
          },
          onFinish = { e ->
-            if (e != null) {
-               list.add("onError")
-            } else {
-               list.add("onSuccess")
-            }
+            list.add("onFinish")
+            list.add(e)
          },
       ) {
          throw RuntimeException("callback error")
       }
 
-      val result = syncable.sync()
+      syncable.sync()
 
-      assertEquals("callback error", result.exceptionOrNull()!!.message)
-      assertEquals("onStart|onError", list.joinToString("|"))
+      assertEquals("onStart", list[0])
+      assertEquals("onFinish", list[1])
+      assertEquals("callback error", (list[2] as RuntimeException).message)
+   }
+
+   @Test
+   fun `test callback cancel`() = runTest {
+      val list = mutableListOf<Any?>()
+      val syncable = FSyncable(
+         onStart = {
+            list.add("onStart")
+         },
+         onFinish = { e ->
+            list.add("onFinish")
+            list.add(e)
+         },
+      ) {
+         delay(5_000)
+      }
+
+      launch {
+         syncable.sync()
+      }.also { job ->
+         runCurrent()
+         job.cancelAndJoin()
+         assertEquals("onStart", list[0])
+         assertEquals("onFinish", list[1])
+         assertEquals(true, list[2] is CancellationException)
+      }
    }
 }
