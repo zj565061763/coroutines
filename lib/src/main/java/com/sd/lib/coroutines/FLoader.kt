@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
@@ -63,6 +64,13 @@ suspend fun <T> FLoader.tryLoad(
       onFinish = onFinish,
       onLoad = onLoad,
    )
+}
+
+/**
+ * 如果正在加载中，则会挂起直到加载结束
+ */
+suspend fun FLoader.awaitIdle() {
+   loadingFlow.first { !it }
 }
 
 fun FLoader(): FLoader = LoaderImpl()
