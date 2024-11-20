@@ -352,4 +352,51 @@ class SyncableTest {
          assertEquals(1, it.sync().getOrThrow())
       }
    }
+
+   @Test
+   fun `test callback success`() = runTest {
+      val list = mutableListOf<String>()
+      val syncable = FSyncable(
+         onStart = {
+            list.add("onStart")
+         },
+         onFinish = { e ->
+            if (e != null) {
+               list.add("onError")
+            } else {
+               list.add("onSuccess")
+            }
+         },
+      ) {
+         delay(5_000)
+      }
+
+      val result = syncable.sync()
+      assertEquals(true, result.isSuccess)
+      assertEquals("onStart|onSuccess", list.joinToString("|"))
+   }
+
+   @Test
+   fun `test callback error`() = runTest {
+      val list = mutableListOf<String>()
+      val syncable = FSyncable(
+         onStart = {
+            list.add("onStart")
+         },
+         onFinish = { e ->
+            if (e != null) {
+               list.add("onError")
+            } else {
+               list.add("onSuccess")
+            }
+         },
+      ) {
+         throw RuntimeException("callback error")
+      }
+
+      val result = syncable.sync()
+
+      assertEquals("callback error", result.exceptionOrNull()!!.message)
+      assertEquals("onStart|onError", list.joinToString("|"))
+   }
 }
