@@ -422,4 +422,30 @@ class SyncableTest {
          assertEquals(true, list[2] is CancellationException)
       }
    }
+
+   @Test
+   fun `test callback onStart error`() = runTest {
+      val list = mutableListOf<Any?>()
+      val syncable = FSyncable(
+         onStart = {
+            list.add("onStart")
+            throw RuntimeException("onStart error")
+         },
+         onFinish = { e ->
+            list.add("onFinish")
+            list.add(e)
+         },
+      ) {
+         delay(5_000)
+      }
+
+      runCatching {
+         syncable.sync()
+      }.also {
+         assertEquals("onStart error", (it.exceptionOrNull() as RuntimeException).message)
+         assertEquals("onStart", list[0])
+         assertEquals("onFinish", list[1])
+         assertEquals("onStart error", (list[2] as RuntimeException).message)
+      }
+   }
 }
