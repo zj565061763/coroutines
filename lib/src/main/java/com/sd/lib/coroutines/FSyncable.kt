@@ -1,7 +1,7 @@
 package com.sd.lib.coroutines
 
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
@@ -75,7 +75,9 @@ private class SyncableImpl<T>(
       if (currentCoroutineContext()[SyncElement]?.syncable === this@SyncableImpl) {
          throw ReSyncException("Can not call sync in the onSync block.")
       }
-      return withContext(Dispatchers.fMain) {
+      return withContext(
+         runCatching { Main.immediate }.getOrDefault(Main)
+      ) {
          if (_syncing) {
             _continuations.await()
          } else {
