@@ -30,32 +30,34 @@ class FKeyedState<T> {
       }
    }
 
-   suspend fun emit(key: String, state: T) {
-      emitWithRelease(
+   fun update(key: String, state: T) {
+      updateInternal(
          key = key,
          state = state,
          release = false,
       )
    }
 
-   suspend fun emitAndRelease(key: String, state: T) {
-      emitWithRelease(
+   fun updateAndRelease(key: String, state: T) {
+      updateInternal(
          key = key,
          state = state,
          release = true,
       )
    }
 
-   private suspend fun emitWithRelease(
+   private fun updateInternal(
       key: String,
       state: T,
       release: Boolean,
    ) {
-      withContext(Dispatchers.Main) {
-         val holder = _holder.getOrPut(key) { KeyedFlow(key, releaseAble = false) }
-         holder.emit(state)
-         if (release) {
-            holder.release()
+      fGlobalLaunch {
+         withContext(Dispatchers.Main) {
+            val holder = _holder.getOrPut(key) { KeyedFlow(key, releaseAble = false) }
+            holder.emit(state)
+            if (release) {
+               holder.release()
+            }
          }
       }
    }

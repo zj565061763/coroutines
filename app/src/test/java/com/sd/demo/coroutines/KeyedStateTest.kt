@@ -22,10 +22,10 @@ class KeyedStateTest {
       val keyedState = FKeyedState<Int>()
       assertEquals(null, keyedState.getOrNull(""))
 
-      keyedState.emit("", 111)
+      keyedState.update("", 111)
       assertEquals(111, keyedState.getOrNull(""))
 
-      keyedState.emitAndRelease("", 222)
+      keyedState.updateAndRelease("", 222)
       assertEquals(null, keyedState.getOrNull(""))
    }
 
@@ -43,7 +43,7 @@ class KeyedStateTest {
          assertEquals(0, count.get())
       }
 
-      keyedState.emitAndRelease("", 1)
+      keyedState.updateAndRelease("", 1)
       runCurrent()
       assertEquals(1, count.get())
       assertEquals(1, keyedState.getOrNull(""))
@@ -77,10 +77,10 @@ class KeyedStateTest {
    fun `test flow`() = runTest {
       val keyedState = FKeyedState<Int>()
       keyedState.flowOf("").test {
-         repeat(10) { keyedState.emit("", 111) }
+         repeat(10) { keyedState.update("", 111) }
          assertEquals(111, awaitItem())
 
-         keyedState.emit("", 222)
+         keyedState.update("", 222)
          assertEquals(222, awaitItem())
       }
    }
