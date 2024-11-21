@@ -94,27 +94,28 @@ class ContinuationsTest {
    @Test
    fun `test cancelAll with cause`() = runTest {
       val continuations = FContinuations<Int>()
-      val count = AtomicInteger(0)
-
-      repeat(3) {
-         launch {
-            try {
-               continuations.await()
-            } catch (e: Throwable) {
-               assertEquals("cancelAll with cause 1", e.message)
-               count.updateAndGet { it + 1 }
+      val flow = MutableSharedFlow<Any>()
+      flow.test {
+         repeat(3) {
+            launch {
+               try {
+                  continuations.await()
+                  flow.emit(1)
+               } catch (e: Throwable) {
+                  flow.emit(e)
+                  assertEquals("cancelAll with cause 1", e.message)
+               }
             }
          }
+
+         runCurrent()
+         continuations.cancelAll(IllegalArgumentException("cancelAll with cause 1"))
+         continuations.cancelAll(IllegalStateException("cancelAll with cause 2"))
+
+         repeat(3) {
+            assertEquals("cancelAll with cause 1", (awaitItem() as IllegalArgumentException).message)
+         }
       }
-
-      runCurrent()
-
-      // cancelAll with cause
-      continuations.cancelAll(Exception("cancelAll with cause 1"))
-      continuations.cancelAll(Exception("cancelAll with cause 2"))
-
-      advanceUntilIdle()
-      assertEquals(3, count.get())
    }
 
    @Test
