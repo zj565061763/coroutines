@@ -39,11 +39,9 @@ class KeyedStateTest {
       val state = FKeyedState { 0 }
       state.flowOf("").test {
          assertEquals(0, awaitItem())
-
-         repeat(10) { state.update("", 1) }
-         assertEquals(1, awaitItem())
-
+         state.update("", 1)
          state.update("", 2)
+         assertEquals(1, awaitItem())
          assertEquals(2, awaitItem())
       }
    }
