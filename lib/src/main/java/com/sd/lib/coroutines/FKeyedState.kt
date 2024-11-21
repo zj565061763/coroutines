@@ -39,13 +39,6 @@ class FKeyedState<T>(
       }
    }
 
-   /** 获取当前key的个数 */
-   suspend fun size(): Int {
-      return withContext(Dispatchers.fPreferMainImmediate) {
-         _holder.size
-      }
-   }
-
    private fun updateInternal(key: String, state: T, release: Boolean) {
       /** 注意，这里要切换到[Dispatchers.Main]保证按调用顺序更新状态 */
       fGlobalLaunch(Dispatchers.Main) {

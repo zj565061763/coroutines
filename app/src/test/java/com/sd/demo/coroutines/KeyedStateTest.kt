@@ -16,60 +16,57 @@ class KeyedStateTest {
 
    @Test
    fun `test flow before update`() = runTest {
-      val state = FKeyedState { 100 }
-      assertEquals(0, state.size())
+      val state = FKeyedState { 0 }
       state.flowOf("").test {
-         assertEquals(100, awaitItem())
-         assertEquals(1, state.size())
+         assertEquals(0, awaitItem())
       }
-      assertEquals(0, state.size())
    }
 
    @Test
    fun `test flow after update`() = runTest {
-      val state = FKeyedState { 100 }
+      val state = FKeyedState { 0 }
 
-      state.update("", 101)
+      state.update("", 1)
       runCurrent()
-      assertEquals(1, state.size())
 
       state.flowOf("").test {
-         assertEquals(101, awaitItem())
-         assertEquals(1, state.size())
+         assertEquals(1, awaitItem())
       }
-
-      assertEquals(1, state.size())
    }
 
    @Test
    fun `test update multi times`() = runTest {
-      val state = FKeyedState { 100 }
+      val state = FKeyedState { 0 }
       state.flowOf("").test {
-         assertEquals(100, awaitItem())
-         repeat(10) { state.update("", 101) }
-         assertEquals(101, awaitItem())
-         state.update("", 102)
-         assertEquals(102, awaitItem())
+         assertEquals(0, awaitItem())
+
+         repeat(10) { state.update("", 1) }
+         assertEquals(1, awaitItem())
+
+         state.update("", 2)
+         assertEquals(2, awaitItem())
       }
    }
 
    @Test
    fun `test updateAndRelease`() = runTest {
-      val state = FKeyedState { 100 }
+      val state = FKeyedState { 0 }
       val flow = state.flowOf("")
 
+      state.updateAndRelease("", 999)
+      runCurrent()
       flow.test {
-         assertEquals(100, awaitItem())
-         state.updateAndRelease("", 101)
-         assertEquals(101, awaitItem())
-         assertEquals(1, state.size())
+         assertEquals(0, awaitItem())
       }
 
-      assertEquals(0, state.size())
       flow.test {
-         assertEquals(100, awaitItem())
-         assertEquals(1, state.size())
+         assertEquals(0, awaitItem())
+         state.updateAndRelease("", 1)
+         assertEquals(1, awaitItem())
       }
-      assertEquals(0, state.size())
+
+      flow.test {
+         assertEquals(0, awaitItem())
+      }
    }
 }
