@@ -37,9 +37,10 @@ class SyncableTest {
       val syncable = FSyncable { error("error in block") }
       launch {
          val result = syncable.sync()
-         assertEquals("error in block", result.exceptionOrNull()!!.message)
+         assertEquals("error in block", (result.exceptionOrNull() as IllegalStateException).message)
       }.also { job ->
-         runCurrent()
+         job.join()
+         assertEquals(true, job.isCompleted)
          assertEquals(false, job.isCancelled)
       }
    }
@@ -51,7 +52,8 @@ class SyncableTest {
          val result = syncable.sync()
          assertEquals(true, result.exceptionOrNull() is CancellationException)
       }.also { job ->
-         runCurrent()
+         job.join()
+         assertEquals(true, job.isCompleted)
          assertEquals(false, job.isCancelled)
       }
    }
@@ -63,7 +65,8 @@ class SyncableTest {
          val result = syncable.sync()
          assertEquals(true, result.exceptionOrNull() is CancellationException)
       }.also { job ->
-         runCurrent()
+         job.join()
+         assertEquals(true, job.isCompleted)
          assertEquals(false, job.isCancelled)
       }
    }
