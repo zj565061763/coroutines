@@ -3,14 +3,20 @@ package com.sd.lib.coroutines
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.MainCoroutineDispatcher
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.plus
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
-private val FGlobalScope: CoroutineScope = MainScope() + CoroutineName("FGlobalScope")
+val Dispatchers.preferMainImmediate: MainCoroutineDispatcher
+   get() = runCatching { Main.immediate }.getOrElse { Main }
+
+private val FGlobalScope = CoroutineScope(
+   SupervisorJob() + Dispatchers.preferMainImmediate + CoroutineName("FGlobalScope")
+)
 
 /**
  * 启动全局协程，[block]总是在主线程按顺序执行
