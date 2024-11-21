@@ -16,7 +16,7 @@ class FKeyedState<T>(
    /** 获取[key]对应的状态流 */
    fun flowOf(key: String): Flow<T> {
       return channelFlow {
-         withContext(Dispatchers.fPreferMainImmediate) {
+         withContext(Dispatchers.preferMainImmediate) {
             _holder.getOrPut(key) { KeyedFlow(key, getDefault(key)) }
          }.also { flow ->
             flow.collect { data ->
@@ -77,7 +77,7 @@ class FKeyedState<T>(
       }
 
       private suspend fun releaseIfIdle() {
-         withContext(Dispatchers.fPreferMainImmediate) {
+         withContext(Dispatchers.preferMainImmediate) {
             if (_releaseAble && _flow.subscriptionCount.value == 0) {
                _holder.remove(key).also {
                   check(it === this@KeyedFlow)

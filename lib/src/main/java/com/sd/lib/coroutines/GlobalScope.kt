@@ -11,11 +11,11 @@ import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
-val Dispatchers.fPreferMainImmediate: MainCoroutineDispatcher
+val Dispatchers.preferMainImmediate: MainCoroutineDispatcher
    get() = runCatching { Main.immediate }.getOrElse { Main }
 
 private val FGlobalScope = CoroutineScope(
-   SupervisorJob() + Dispatchers.fPreferMainImmediate + CoroutineName("FGlobalScope")
+   SupervisorJob() + Dispatchers.preferMainImmediate + CoroutineName("FGlobalScope")
 )
 
 /**

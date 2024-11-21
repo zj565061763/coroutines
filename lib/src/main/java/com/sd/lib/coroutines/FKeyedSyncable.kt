@@ -12,7 +12,7 @@ class FKeyedSyncable<T> {
       key: String,
       block: suspend () -> T,
    ): Result<T> {
-      return withContext(Dispatchers.fPreferMainImmediate) {
+      return withContext(Dispatchers.preferMainImmediate) {
          _holder[key]?.sync() ?: newSyncable(key, block).let { syncable ->
             _holder[key] = syncable.also { check(!it.isSyncing) }
             try {
