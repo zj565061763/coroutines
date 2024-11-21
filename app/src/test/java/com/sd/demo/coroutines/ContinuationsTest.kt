@@ -24,7 +24,7 @@ class ContinuationsTest {
    @Test
    fun `test resumeAll`() = runTest {
       val continuations = FContinuations<Int>()
-      val flow = MutableSharedFlow<Any>()
+      val flow = MutableSharedFlow<Any?>()
       flow.test {
          repeat(3) {
             launch {
@@ -46,7 +46,7 @@ class ContinuationsTest {
    @Test
    fun `test resumeAllWithException`() = runTest {
       val continuations = FContinuations<Int>()
-      val flow = MutableSharedFlow<Any>()
+      val flow = MutableSharedFlow<Any?>()
       flow.test {
          repeat(3) {
             launch {
@@ -72,7 +72,7 @@ class ContinuationsTest {
    @Test
    fun `test cancelAll`() = runTest {
       val continuations = FContinuations<Int>()
-      val flow = MutableSharedFlow<Any>()
+      val flow = MutableSharedFlow<Any?>()
       flow.test {
          repeat(3) {
             launch {
@@ -98,7 +98,7 @@ class ContinuationsTest {
    @Test
    fun `test cancelAll with cause`() = runTest {
       val continuations = FContinuations<Int>()
-      val flow = MutableSharedFlow<Any>()
+      val flow = MutableSharedFlow<Any?>()
       flow.test {
          repeat(3) {
             launch {
@@ -126,7 +126,7 @@ class ContinuationsTest {
       val scope = MainScope()
 
       val continuations = FContinuations<Int>()
-      val flow = MutableSharedFlow<Any>()
+      val flow = MutableSharedFlow<Any?>()
       flow.test {
          repeat(3) {
             scope.launch {

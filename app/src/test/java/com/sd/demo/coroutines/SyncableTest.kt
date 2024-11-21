@@ -10,6 +10,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
@@ -355,85 +356,83 @@ class SyncableTest {
 
    @Test
    fun `test callback success`() = runTest {
-      val list = mutableListOf<Any?>()
+      val flow = MutableSharedFlow<Any?>()
       val syncable = FSyncable(
-         onStart = {
-            list.add("onStart")
-         },
          onFinish = { e ->
-            list.add("onFinish")
-            list.add(e)
+            launch {
+               flow.emit(2)
+               flow.emit(e)
+            }
          },
       ) {
+         flow.emit(1)
          delay(5_000)
       }
 
-      syncable.sync()
-
-      assertEquals("onStart", list[0])
-      assertEquals("onFinish", list[1])
-      assertEquals(null, list[2])
+      flow.test {
+         syncable.sync()
+         assertEquals(1, awaitItem())
+         assertEquals(2, awaitItem())
+         assertEquals(null, awaitItem())
+      }
    }
 
    @Test
    fun `test callback error`() = runTest {
-      val list = mutableListOf<Any?>()
+      val flow = MutableSharedFlow<Any?>()
       val syncable = FSyncable(
-         onStart = {
-            list.add("onStart")
-         },
          onFinish = { e ->
-            list.add("onFinish")
-            list.add(e)
+            launch {
+               flow.emit(2)
+               flow.emit(e)
+            }
          },
       ) {
+         flow.emit(1)
          throw RuntimeException("callback error")
       }
 
-      syncable.sync()
-
-      assertEquals("onStart", list[0])
-      assertEquals("onFinish", list[1])
-      assertEquals("callback error", (list[2] as RuntimeException).message)
+      flow.test {
+         syncable.sync()
+         assertEquals(1, awaitItem())
+         assertEquals(2, awaitItem())
+         assertEquals("callback error", (awaitItem() as RuntimeException).message)
+      }
    }
 
    @Test
    fun `test callback cancel`() = runTest {
-      val list = mutableListOf<Any?>()
+      val flow = MutableSharedFlow<Any?>()
       val syncable = FSyncable(
-         onStart = {
-            list.add("onStart")
-         },
          onFinish = { e ->
-            list.add("onFinish")
-            list.add(e)
+            launch {
+               flow.emit(2)
+               flow.emit(e)
+            }
          },
       ) {
+         flow.emit(1)
          delay(5_000)
       }
 
-      launch {
-         syncable.sync()
-      }.also { job ->
-         runCurrent()
-         job.cancelAndJoin()
-         assertEquals("onStart", list[0])
-         assertEquals("onFinish", list[1])
-         assertEquals(true, list[2] is CancellationException)
+      flow.test {
+         launch {
+            syncable.sync()
+         }.also { job ->
+            runCurrent()
+            job.cancelAndJoin()
+            assertEquals(1, awaitItem())
+            assertEquals(2, awaitItem())
+            assertEquals(true, awaitItem() is CancellationException)
+         }
       }
    }
 
    @Test
-   fun `test callback onStart error`() = runTest {
-      val list = mutableListOf<Any?>()
+   fun `test callback onFinish error`() = runTest {
       val syncable = FSyncable(
-         onStart = {
-            list.add("onStart")
-            throw RuntimeException("onStart error")
-         },
          onFinish = { e ->
-            list.add("onFinish")
-            list.add(e)
+            error("error onFinish")
          },
       ) {
          delay(5_000)
@@ -442,10 +441,7 @@ class SyncableTest {
       runCatching {
          syncable.sync()
       }.also {
-         assertEquals("onStart error", (it.exceptionOrNull() as RuntimeException).message)
-         assertEquals("onStart", list[0])
-         assertEquals("onFinish", list[1])
-         assertEquals("onStart error", (list[2] as RuntimeException).message)
+         assertEquals("error onFinish", (it.exceptionOrNull() as IllegalStateException).message)
       }
    }
 }

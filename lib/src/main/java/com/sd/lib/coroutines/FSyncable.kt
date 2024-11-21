@@ -40,19 +40,15 @@ suspend fun FSyncable<*>.awaitIdle() {
  * 注意：[onSync]中的所有异常都会被捕获，包括[CancellationException]
  */
 fun <T> FSyncable(
-   /** 同步开始回调(主线程) */
-   onStart: (() -> Unit)? = null,
    /** 同步结束回调(主线程) */
    onFinish: ((Throwable?) -> Unit)? = null,
    onSync: suspend () -> T,
 ): FSyncable<T> = SyncableImpl(
-   onStart = onStart,
    onFinish = onFinish,
    onSync = onSync,
 )
 
 private class SyncableImpl<T>(
-   private val onStart: (() -> Unit)?,
    private val onFinish: ((Throwable?) -> Unit)?,
    private val onSync: suspend () -> T,
 ) : FSyncable<T> {
@@ -82,7 +78,6 @@ private class SyncableImpl<T>(
             var throwable: Throwable? = null
             try {
                _syncing = true
-               onStart?.invoke()
                withContext(SyncElement(this@SyncableImpl)) {
                   runCatching {
                      coroutineScope { onSync() }

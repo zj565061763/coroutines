@@ -20,7 +20,7 @@ class GlobalLaunchTest {
 
    @Test
    fun test() = runTest {
-      val flow = MutableSharedFlow<Any>()
+      val flow = MutableSharedFlow<Any?>()
       flow.test {
          fGlobalLaunch {
             flow.emit(1)
