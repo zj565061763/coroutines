@@ -40,16 +40,10 @@ suspend fun FSyncable<*>.awaitIdle() {
  * 注意：[onSync]中的所有异常都会被捕获，包括[CancellationException]
  */
 fun <T> FSyncable(
-   /** 同步结束回调(主线程) */
-   onFinish: ((Throwable?) -> Unit)? = null,
    onSync: suspend () -> T,
-): FSyncable<T> = SyncableImpl(
-   onFinish = onFinish,
-   onSync = onSync,
-)
+): FSyncable<T> = SyncableImpl(onSync)
 
 private class SyncableImpl<T>(
-   private val onFinish: ((Throwable?) -> Unit)?,
    private val onSync: suspend () -> T,
 ) : FSyncable<T> {
    private val _continuations = FContinuations<Result<T>>()
@@ -75,7 +69,6 @@ private class SyncableImpl<T>(
          if (_syncing) {
             _continuations.await()
          } else {
-            var throwable: Throwable? = null
             try {
                _syncing = true
                withContext(SyncElement(this@SyncableImpl)) {
@@ -85,17 +78,14 @@ private class SyncableImpl<T>(
                }.onFailure { error ->
                   /** 只检查[ReSyncException]，把其他异常当作普通异常，包括[CancellationException] */
                   if (error is ReSyncException) throw error
-                  throwable = error
                }.also { result ->
                   _continuations.resumeAll(result)
                }
             } catch (e: Throwable) {
-               throwable = e
                _continuations.cancelAll()
                throw e
             } finally {
                _syncing = false
-               onFinish?.invoke(throwable)
             }
          }
       }

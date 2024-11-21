@@ -10,7 +10,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
@@ -354,97 +353,6 @@ class SyncableTest {
       }.also {
          array[0] = it
          assertEquals(1, it.sync().getOrThrow())
-      }
-   }
-
-   @Test
-   fun `test callback success`() = runTest {
-      val flow = MutableSharedFlow<Any?>()
-      val syncable = FSyncable(
-         onFinish = { e ->
-            launch {
-               flow.emit(2)
-               flow.emit(e)
-            }
-         },
-      ) {
-         flow.emit(1)
-         delay(5_000)
-      }
-
-      flow.test {
-         syncable.sync()
-         assertEquals(1, awaitItem())
-         assertEquals(2, awaitItem())
-         assertEquals(null, awaitItem())
-      }
-   }
-
-   @Test
-   fun `test callback error`() = runTest {
-      val flow = MutableSharedFlow<Any?>()
-      val syncable = FSyncable(
-         onFinish = { e ->
-            launch {
-               flow.emit(2)
-               flow.emit(e)
-            }
-         },
-      ) {
-         flow.emit(1)
-         throw RuntimeException("callback error")
-      }
-
-      flow.test {
-         syncable.sync()
-         assertEquals(1, awaitItem())
-         assertEquals(2, awaitItem())
-         assertEquals("callback error", (awaitItem() as RuntimeException).message)
-      }
-   }
-
-   @Test
-   fun `test callback cancel`() = runTest {
-      val flow = MutableSharedFlow<Any?>()
-      val syncable = FSyncable(
-         onFinish = { e ->
-            launch {
-               flow.emit(2)
-               flow.emit(e)
-            }
-         },
-      ) {
-         flow.emit(1)
-         delay(5_000)
-      }
-
-      flow.test {
-         launch {
-            syncable.sync()
-         }.also { job ->
-            runCurrent()
-            job.cancelAndJoin()
-            assertEquals(1, awaitItem())
-            assertEquals(2, awaitItem())
-            assertEquals(true, awaitItem() is CancellationException)
-         }
-      }
-   }
-
-   @Test
-   fun `test callback onFinish error`() = runTest {
-      val syncable = FSyncable(
-         onFinish = { e ->
-            error("error onFinish")
-         },
-      ) {
-         delay(5_000)
-      }
-
-      runCatching {
-         syncable.sync()
-      }.also {
-         assertEquals("error onFinish", (it.exceptionOrNull() as IllegalStateException).message)
       }
    }
 }
