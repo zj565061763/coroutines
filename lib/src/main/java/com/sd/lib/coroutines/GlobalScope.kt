@@ -6,7 +6,6 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
-import kotlinx.coroutines.supervisorScope
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -23,10 +22,6 @@ fun fGlobalLaunch(
    FGlobalScope.launch(
       context = context,
       start = start,
-      block = {
-         supervisorScope {
-            block()
-         }
-      },
+      block = block,
    )
 }
