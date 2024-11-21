@@ -46,7 +46,7 @@ class FKeyedState<T> {
       release: Boolean,
    ) {
       withContext(Dispatchers.Main) {
-         val holder = _holder.getOrPut(key) { KeyedFlow(key, releaseAble = false) }
+         val holder = _holder.getOrPut(key) { KeyedFlow(key) }
          holder.emit(state)
          if (release) {
             holder.release()
@@ -59,16 +59,15 @@ class FKeyedState<T> {
       block: suspend (T) -> Unit,
    ) {
       withContext(Dispatchers.preferImmediateMain) {
-         val holder = _holder.getOrPut(key) { KeyedFlow(key, releaseAble = true) }
+         val holder = _holder.getOrPut(key) { KeyedFlow(key) }
          holder.collect(block)
       }
    }
 
    private inner class KeyedFlow<T>(
       private val key: String,
-      releaseAble: Boolean,
    ) {
-      private var _releaseAble = releaseAble
+      private var _releaseAble = true
       private val _flow = MutableStateFlow<T?>(null)
 
       fun emit(value: T) {
@@ -78,7 +77,9 @@ class FKeyedState<T> {
 
       suspend fun collect(block: suspend (T) -> Unit) {
          try {
-            _flow.mapNotNull { it }.collect { block(it) }
+            _flow.mapNotNull { it }.collect {
+               block(it)
+            }
          } finally {
             releaseIfIdle()
          }
