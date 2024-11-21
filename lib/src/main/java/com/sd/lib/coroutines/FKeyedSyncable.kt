@@ -41,10 +41,10 @@ class FKeyedSyncable<T> {
    ): FSyncable<T> {
       return FSyncable {
          try {
-            _loadingState.update(key, true)
+            _loadingState.update(key, state = true)
             block()
          } finally {
-            _loadingState.updateAndRelease(key, false)
+            _loadingState.updateAndRelease(key, state = false)
          }
       }
    }
