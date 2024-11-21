@@ -7,6 +7,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -29,6 +30,8 @@ class GlobalLaunchTest {
 
          fGlobalLaunch {
             throw CancellationException()
+         }.also {
+            runCurrent()
          }
 
          fGlobalLaunch {
@@ -39,6 +42,8 @@ class GlobalLaunchTest {
 
          fGlobalLaunch {
             currentCoroutineContext().cancel()
+         }.also {
+            runCurrent()
          }
 
          fGlobalLaunch {

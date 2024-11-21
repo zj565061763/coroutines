@@ -33,7 +33,6 @@ class ContinuationsTest {
          continuations.resumeAll(1)
          continuations.resumeAll(2)
 
-         advanceUntilIdle()
          repeat(3) {
             assertEquals(1, awaitItem())
          }
@@ -60,7 +59,6 @@ class ContinuationsTest {
          continuations.resumeAllWithException(IllegalArgumentException("resumeAllWithException 1"))
          continuations.resumeAllWithException(IllegalStateException("resumeAllWithException 2"))
 
-         advanceUntilIdle()
          repeat(3) {
             assertEquals("resumeAllWithException 1", (awaitItem() as IllegalArgumentException).message)
          }
