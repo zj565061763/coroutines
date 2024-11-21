@@ -133,8 +133,8 @@ class SyncableTest {
 
    @Test
    fun `test awaitIdle`() = runTest {
-      val syncable = FSyncable { delay(5_000) }
-      launch {
+      val syncable = FSyncable { delay(Long.MAX_VALUE) }
+      val job = launch {
          syncable.sync()
       }.also {
          runCurrent()
@@ -148,7 +148,7 @@ class SyncableTest {
       }.also {
          runCurrent()
          assertEquals(1, count.get())
-         advanceUntilIdle()
+         job.cancelAndJoin()
          assertEquals(2, count.get())
       }
    }
