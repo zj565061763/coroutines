@@ -31,7 +31,7 @@ class FKeyedState<T>(
       updateInternal(key = key, state = state, release = false)
    }
 
-   /** 更新[key]对应的状态，并在更新之后尝试释放该状态 */
+   /** 更新[key]对应的状态，并在更新之后尝试释放该[key] */
    fun updateAndRelease(key: String, state: T) {
       updateInternal(key = key, state = state, release = true)
    }
