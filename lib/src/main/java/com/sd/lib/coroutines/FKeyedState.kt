@@ -52,14 +52,12 @@ class FKeyedState<T> {
    }
 
    private fun updateInternal(key: String, state: T, release: Boolean) {
-      fGlobalLaunch {
-         /** 注意，这里要切换到[Dispatchers.Main]保证按调用顺序更新状态 */
-         withContext(Dispatchers.Main) {
-            val holder = _holder.getOrPut(key) { KeyedFlow(key, releaseAble = false) }
-            holder.emit(state)
-            if (release) {
-               holder.release()
-            }
+      /** 注意，这里要切换到[Dispatchers.Main]保证按调用顺序更新状态 */
+      fGlobalLaunch(Dispatchers.Main) {
+         val holder = _holder.getOrPut(key) { KeyedFlow(key, releaseAble = false) }
+         holder.emit(state)
+         if (release) {
+            holder.release()
          }
       }
    }

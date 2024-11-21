@@ -6,7 +6,6 @@ import androidx.appcompat.app.AppCompatActivity
 import com.sd.demo.coroutines.databinding.ActivityMainBinding
 import com.sd.lib.coroutines.fGlobalLaunch
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
    private val _binding by lazy { ActivityMainBinding.inflate(layoutInflater) }
@@ -33,10 +32,8 @@ private fun launchGlobalImmediate() {
 
 private fun launchGlobalDispatched() {
    logMsg { "1" }
-   fGlobalLaunch {
-      withContext(Dispatchers.Main) {
-         logMsg { "2" }
-      }
+   fGlobalLaunch(Dispatchers.Main) {
+      logMsg { "2" }
    }
    logMsg { "3" }
 }
