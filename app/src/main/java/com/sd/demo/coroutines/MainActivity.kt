@@ -5,6 +5,8 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.sd.demo.coroutines.databinding.ActivityMainBinding
 import com.sd.lib.coroutines.fGlobalLaunch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
    private val _binding by lazy { ActivityMainBinding.inflate(layoutInflater) }
@@ -12,16 +14,29 @@ class MainActivity : AppCompatActivity() {
    override fun onCreate(savedInstanceState: Bundle?) {
       super.onCreate(savedInstanceState)
       setContentView(_binding.root)
-      _binding.btn.setOnClickListener {
-         launchGlobal()
+      _binding.btnLaunchGlobalImmediate.setOnClickListener {
+         launchGlobalImmediate()
+      }
+      _binding.btnLaunchGlobalDispatched.setOnClickListener {
+         launchGlobalDispatched()
       }
    }
 }
 
-private fun launchGlobal() {
+private fun launchGlobalImmediate() {
    logMsg { "1" }
    fGlobalLaunch {
       logMsg { "2" }
+   }
+   logMsg { "3" }
+}
+
+private fun launchGlobalDispatched() {
+   logMsg { "1" }
+   fGlobalLaunch {
+      withContext(Dispatchers.Main) {
+         logMsg { "2" }
+      }
    }
    logMsg { "3" }
 }

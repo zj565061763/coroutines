@@ -6,10 +6,17 @@
     android:orientation="vertical">
 
     <Button
-        android:id="@+id/btn"
+        android:id="@+id/btn_launchGlobalImmediate"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="button"
+        android:text="launchGlobalImmediate"
+        android:textAllCaps="false" />
+
+    <Button
+        android:id="@+id/btn_launchGlobalDispatched"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="launchGlobalDispatched"
         android:textAllCaps="false" />
 
 </LinearLayout>
