@@ -20,7 +20,7 @@ class ContinuationsTest {
    @Test
    fun `test resumeAll`() = runTest {
       val continuations = FContinuations<Int>()
-      val flow = MutableSharedFlow<Int>()
+      val flow = MutableSharedFlow<Any>()
       flow.test {
          repeat(3) {
             launch {
@@ -43,27 +43,28 @@ class ContinuationsTest {
    @Test
    fun `test resumeAllWithException`() = runTest {
       val continuations = FContinuations<Int>()
-      val count = AtomicInteger(0)
-
-      repeat(3) {
-         launch {
-            try {
-               continuations.await()
-            } catch (e: Throwable) {
-               assertEquals("resumeAllWithException 1", e.message)
-               count.updateAndGet { it + 1 }
+      val flow = MutableSharedFlow<Any>()
+      flow.test {
+         repeat(3) {
+            launch {
+               try {
+                  continuations.await()
+                  flow.emit(1)
+               } catch (e: Throwable) {
+                  flow.emit(e)
+               }
             }
          }
+
+         runCurrent()
+         continuations.resumeAllWithException(IllegalArgumentException("resumeAllWithException 1"))
+         continuations.resumeAllWithException(IllegalStateException("resumeAllWithException 2"))
+
+         advanceUntilIdle()
+         repeat(3) {
+            assertEquals("resumeAllWithException 1", (awaitItem() as IllegalArgumentException).message)
+         }
       }
-
-      runCurrent()
-
-      // resumeAllWithException
-      continuations.resumeAllWithException(Exception("resumeAllWithException 1"))
-      continuations.resumeAllWithException(Exception("resumeAllWithException 2"))
-
-      advanceUntilIdle()
-      assertEquals(3, count.get())
    }
 
    @Test
