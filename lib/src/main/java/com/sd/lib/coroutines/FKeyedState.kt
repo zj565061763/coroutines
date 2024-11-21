@@ -4,11 +4,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.withContext
 
-class FKeyedState<T> {
-   private val _holder: MutableMap<String, KeyedFlow<T>> = mutableMapOf()
+class FKeyedState<T>(
+   /** 获取默认值(主线程) */
+   private val getDefault: (key: String) -> T,
+) {
+   private val _holder: MutableMap<String, KeyedFlow> = mutableMapOf()
 
    /** 更新[key]对应的状态 */
    fun update(key: String, state: T) {
@@ -44,18 +46,11 @@ class FKeyedState<T> {
       }
    }
 
-   /** 获取[key]对应的状态 */
-   suspend fun getOrNull(key: String): T? {
-      return withContext(Dispatchers.fPreferMainImmediate) {
-         _holder[key]?.getOrNull()
-      }
-   }
-
    private fun updateInternal(key: String, state: T, release: Boolean) {
       /** 注意，这里要切换到[Dispatchers.Main]保证按调用顺序更新状态 */
       fGlobalLaunch(Dispatchers.Main) {
-         val holder = _holder.getOrPut(key) { KeyedFlow(key, releaseAble = false) }
-         holder.emit(state)
+         val holder = _holder.getOrPut(key) { KeyedFlow(key, state) }
+         holder.update(state)
          if (release) {
             holder.release()
          }
@@ -64,35 +59,31 @@ class FKeyedState<T> {
 
    private suspend fun collect(key: String, block: suspend (T) -> Unit) {
       withContext(Dispatchers.fPreferMainImmediate) {
-         val holder = _holder.getOrPut(key) { KeyedFlow(key) }
+         val holder = _holder.getOrPut(key) { KeyedFlow(key, getDefault(key)) }
          holder.collect(block)
       }
    }
 
-   private inner class KeyedFlow<T>(
+   private inner class KeyedFlow(
       private val key: String,
-      releaseAble: Boolean = true,
+      initialState: T,
    ) {
-      private var _releaseAble = releaseAble
-      private val _flow = MutableStateFlow<T?>(null)
+      private var _releaseAble = true
+      private val _flow = MutableStateFlow(initialState)
 
-      fun emit(value: T) {
+      fun update(value: T) {
          _releaseAble = false
          _flow.value = value
       }
 
       suspend fun collect(block: suspend (T) -> Unit) {
          try {
-            _flow.mapNotNull { it }.collect {
+            _flow.collect {
                block(it)
             }
          } finally {
             releaseIfIdle()
          }
-      }
-
-      fun getOrNull(): T? {
-         return _flow.value
       }
 
       fun release() {
