@@ -1,9 +1,11 @@
 package com.sd.demo.coroutines
 
+import app.cash.turbine.test
 import com.sd.lib.coroutines.FContinuations
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -18,23 +20,24 @@ class ContinuationsTest {
    @Test
    fun `test resumeAll`() = runTest {
       val continuations = FContinuations<Int>()
-      val count = AtomicInteger(0)
+      val flow = MutableSharedFlow<Int>()
+      flow.test {
+         repeat(3) {
+            launch {
+               val result = continuations.await()
+               flow.emit(result)
+            }
+         }
 
-      repeat(3) {
-         launch {
-            val result = continuations.await()
-            count.updateAndGet { it + result }
+         runCurrent()
+         continuations.resumeAll(1)
+         continuations.resumeAll(2)
+
+         advanceUntilIdle()
+         repeat(3) {
+            assertEquals(1, awaitItem())
          }
       }
-
-      runCurrent()
-
-      // resumeAll
-      continuations.resumeAll(1)
-      continuations.resumeAll(2)
-
-      advanceUntilIdle()
-      assertEquals(3, count.get())
    }
 
    @Test
