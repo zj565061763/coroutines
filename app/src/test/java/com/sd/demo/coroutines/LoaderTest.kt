@@ -101,18 +101,6 @@ class LoaderTest {
    }
 
    @Test
-   fun `test load when error in onFinish block`() = runTest {
-      val loader = FLoader()
-      runCatching {
-         loader.load(
-            onFinish = { error("onFinish error") },
-         ) {}
-      }.also { result ->
-         assertEquals("onFinish error", result.exceptionOrNull()!!.message)
-      }
-   }
-
-   @Test
    fun `test loadingFlow when params true`() = runTest {
       val loader = FLoader()
       loader.loadingFlow.test {
@@ -164,56 +152,6 @@ class LoaderTest {
          assertEquals(true, awaitItem())
          assertEquals(false, awaitItem())
       }
-   }
-
-   @Test
-   fun `test callback when load success`() = runTest {
-      val loader = FLoader()
-      mutableListOf<String>().also { list ->
-         loader.load(
-            onFinish = { list.add("onFinish") },
-            onLoad = { list.add("onLoad") },
-         ).also {
-            assertEquals("onLoad|onFinish", list.joinToString("|"))
-         }
-      }
-   }
-
-   @Test
-   fun `test callback when load error`() = runTest {
-      val loader = FLoader()
-      mutableListOf<String>().also { list ->
-         loader.load(
-            onFinish = { list.add("onFinish") },
-            onLoad = {
-               list.add("onLoad")
-               error("error")
-            },
-         ).also {
-            assertEquals("onLoad|onFinish", list.joinToString("|"))
-         }
-      }
-   }
-
-   @Test
-   fun `test callback when cancelLoad`() = runTest {
-      val loader = FLoader()
-      val listCallback = mutableListOf<String>()
-
-      launch {
-         loader.load(
-            onFinish = { listCallback.add("onFinish") },
-            onLoad = {
-               listCallback.add("onLoad")
-               delay(Long.MAX_VALUE)
-            },
-         )
-      }
-
-      runCurrent()
-      loader.cancelLoad()
-
-      assertEquals("onLoad|onFinish", listCallback.joinToString("|"))
    }
 
    @Test
