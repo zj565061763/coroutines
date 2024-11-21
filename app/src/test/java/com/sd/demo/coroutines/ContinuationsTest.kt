@@ -4,19 +4,23 @@ import app.cash.turbine.test
 import com.sd.lib.coroutines.FContinuations
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Test
-import java.util.concurrent.atomic.AtomicInteger
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ContinuationsTest {
+   @get:Rule
+   val mainDispatcherRule = MainDispatcherRule()
+
    @Test
    fun `test resumeAll`() = runTest {
       val continuations = FContinuations<Int>()
@@ -103,7 +107,6 @@ class ContinuationsTest {
                   flow.emit(1)
                } catch (e: Throwable) {
                   flow.emit(e)
-                  assertEquals("cancelAll with cause 1", e.message)
                }
             }
          }
@@ -120,27 +123,30 @@ class ContinuationsTest {
 
    @Test
    fun `test cancel outside`() = runTest {
-      val continuations = FContinuations<Int>()
-      val count = AtomicInteger(0)
+      val scope = MainScope()
 
-      val scope = TestScope(testScheduler)
-      repeat(3) {
-         scope.launch {
-            try {
-               continuations.await()
-            } catch (e: Throwable) {
-               assertEquals(true, e is CancellationException)
-               count.updateAndGet { it + 1 }
+      val continuations = FContinuations<Int>()
+      val flow = MutableSharedFlow<Any>()
+      flow.test {
+         repeat(3) {
+            scope.launch {
+               try {
+                  continuations.await()
+                  flow.emit(1)
+               } catch (e: Throwable) {
+                  withContext(NonCancellable) {
+                     flow.emit(e)
+                  }
+               }
             }
          }
+
+         runCurrent()
+         scope.cancel()
+
+         repeat(3) {
+            assertEquals(true, awaitItem() is CancellationException)
+         }
       }
-
-      runCurrent()
-
-      // cancel outside
-      scope.cancel()
-
-      advanceUntilIdle()
-      assertEquals(3, count.get())
    }
 }
