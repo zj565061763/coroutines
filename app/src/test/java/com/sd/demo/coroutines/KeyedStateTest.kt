@@ -5,6 +5,7 @@ import com.sd.lib.coroutines.FKeyedState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -19,68 +20,70 @@ class KeyedStateTest {
 
    @Test
    fun `test getOrNull`() = runTest {
-      val keyedState = FKeyedState<Int>()
-      assertEquals(null, keyedState.getOrNull(""))
+      val state = FKeyedState<Int>()
+      assertEquals(null, state.getOrNull(""))
 
-      keyedState.update("", 111)
-      assertEquals(111, keyedState.getOrNull(""))
+      state.update("", 111)
+      advanceUntilIdle()
+      assertEquals(111, state.getOrNull(""))
 
-      keyedState.updateAndRelease("", 222)
-      assertEquals(null, keyedState.getOrNull(""))
+      state.updateAndRelease("", 222)
+      advanceUntilIdle()
+      assertEquals(null, state.getOrNull(""))
    }
 
    @Test
    fun `test emitAndRelease`() = runTest {
       val count = AtomicInteger()
-      val keyedState = FKeyedState<Int>()
+      val state = FKeyedState<Int>()
 
       val job = launch {
-         keyedState.flowOf("").collect { state ->
-            count.updateAndGet { it + state }
+         state.flowOf("").collect { data ->
+            count.updateAndGet { it + data }
          }
       }.also {
          runCurrent()
          assertEquals(0, count.get())
       }
 
-      keyedState.updateAndRelease("", 1)
+      state.updateAndRelease("", 1)
       runCurrent()
       assertEquals(1, count.get())
-      assertEquals(1, keyedState.getOrNull(""))
+      assertEquals(1, state.getOrNull(""))
 
       job.cancelAndJoin()
-      assertEquals(null, keyedState.getOrNull(""))
+      assertEquals(null, state.getOrNull(""))
    }
 
    @Test
    fun `test none emit collect`() = runTest {
       val count = AtomicInteger()
-      val keyedState = FKeyedState<Int>()
+      val state = FKeyedState<Int>()
 
       val job = launch {
-         keyedState.flowOf("").collect { state ->
-            count.updateAndGet { it + state }
+         state.flowOf("").collect { data ->
+            count.updateAndGet { it + data }
          }
       }.also {
          runCurrent()
          assertEquals(0, count.get())
-         assertEquals(1, keyedState.size())
+         assertEquals(1, state.size())
       }
 
       job.cancelAndJoin()
-      assertEquals(null, keyedState.getOrNull(""))
+      assertEquals(null, state.getOrNull(""))
       assertEquals(0, count.get())
-      assertEquals(0, keyedState.size())
+      assertEquals(0, state.size())
    }
 
    @Test
    fun `test flow`() = runTest {
-      val keyedState = FKeyedState<Int>()
-      keyedState.flowOf("").test {
-         repeat(10) { keyedState.update("", 111) }
+      val state = FKeyedState<Int>()
+      state.flowOf("").test {
+         repeat(10) { state.update("", 111) }
          assertEquals(111, awaitItem())
 
-         keyedState.update("", 222)
+         state.update("", 222)
          assertEquals(222, awaitItem())
       }
    }
