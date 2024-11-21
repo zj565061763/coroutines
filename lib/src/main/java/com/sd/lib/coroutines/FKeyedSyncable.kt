@@ -13,14 +13,14 @@ class FKeyedSyncable<T> {
       block: suspend () -> T,
    ): Result<T> {
       return withContext(Dispatchers.fPreferMainImmediate) {
-         val syncable = _holder.getOrPut(key) { newSyncable(key, block) }
-         if (syncable.isSyncing) {
-            syncable.sync()
-         } else {
-            try {
-               syncable.sync()
-            } finally {
-               _holder.remove(key)
+         _holder[key]?.sync() ?: run {
+            newSyncable(key, block).let { syncable ->
+               _holder[key] = syncable.also { check(!it.isSyncing) }
+               try {
+                  syncable.sync()
+               } finally {
+                  _holder.remove(key)
+               }
             }
          }
       }
