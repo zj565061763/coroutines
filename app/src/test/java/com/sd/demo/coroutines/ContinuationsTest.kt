@@ -68,27 +68,27 @@ class ContinuationsTest {
    @Test
    fun `test cancelAll`() = runTest {
       val continuations = FContinuations<Int>()
-      val count = AtomicInteger(0)
-
-      repeat(3) {
-         launch {
-            try {
-               continuations.await()
-            } catch (e: Throwable) {
-               assertEquals(true, e is CancellationException)
-               count.updateAndGet { it + 1 }
+      val flow = MutableSharedFlow<Any>()
+      flow.test {
+         repeat(3) {
+            launch {
+               try {
+                  continuations.await()
+                  flow.emit(1)
+               } catch (e: Throwable) {
+                  flow.emit(e)
+               }
             }
          }
+
+         runCurrent()
+         continuations.cancelAll()
+         continuations.cancelAll()
+
+         repeat(3) {
+            assertEquals(true, awaitItem() is CancellationException)
+         }
       }
-
-      runCurrent()
-
-      // cancelAll
-      continuations.cancelAll()
-      continuations.cancelAll()
-
-      advanceUntilIdle()
-      assertEquals(3, count.get())
    }
 
    @Test
