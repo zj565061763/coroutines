@@ -10,6 +10,33 @@ import kotlinx.coroutines.withContext
 class FKeyedState<T> {
    private val _holder: MutableMap<String, KeyedFlow<T>> = mutableMapOf()
 
+   /** 更新[key]对应的状态 */
+   fun update(key: String, state: T) {
+      updateInternal(
+         key = key,
+         state = state,
+         release = false
+      )
+   }
+
+   /** 更新[key]对应的状态，并在更新之后尝试释放该状态 */
+   fun updateAndRelease(key: String, state: T) {
+      updateInternal(
+         key = key,
+         state = state,
+         release = true
+      )
+   }
+
+   /** 获取[key]对应的状态流 */
+   fun flowOf(key: String): Flow<T> {
+      return channelFlow {
+         collect(key) {
+            send(it)
+         }
+      }
+   }
+
    /** 获取当前key的个数 */
    suspend fun size(): Int {
       return withContext(Dispatchers.fPreferMainImmediate) {
@@ -22,33 +49,6 @@ class FKeyedState<T> {
       return withContext(Dispatchers.fPreferMainImmediate) {
          _holder[key]?.getOrNull()
       }
-   }
-
-   /** 获取[key]对应的状态流 */
-   fun flowOf(key: String): Flow<T> {
-      return channelFlow {
-         collect(key) {
-            send(it)
-         }
-      }
-   }
-
-   /** 更新[key]对应的状态 */
-   fun update(key: String, state: T) {
-      updateInternal(
-         key = key,
-         state = state,
-         release = false,
-      )
-   }
-
-   /** 更新[key]对应的状态，并在更新之后尝试释放该状态 */
-   fun updateAndRelease(key: String, state: T) {
-      updateInternal(
-         key = key,
-         state = state,
-         release = true,
-      )
    }
 
    private fun updateInternal(key: String, state: T, release: Boolean) {
