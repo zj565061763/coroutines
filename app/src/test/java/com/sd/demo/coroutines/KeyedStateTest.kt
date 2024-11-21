@@ -53,6 +53,27 @@ class KeyedStateTest {
    }
 
    @Test
+   fun `test none emit collect`() = runTest {
+      val count = AtomicInteger()
+      val keyedState = FKeyedState<Int>()
+
+      val job = launch {
+         keyedState.flowOf("").collect { state ->
+            count.updateAndGet { it + state }
+         }
+      }.also {
+         runCurrent()
+         assertEquals(0, count.get())
+         assertEquals(1, keyedState.size())
+      }
+
+      job.cancelAndJoin()
+      assertEquals(null, keyedState.getOrNull(""))
+      assertEquals(0, count.get())
+      assertEquals(0, keyedState.size())
+   }
+
+   @Test
    fun `test flow`() = runTest {
       val keyedState = FKeyedState<Int>()
       keyedState.flowOf("").test {

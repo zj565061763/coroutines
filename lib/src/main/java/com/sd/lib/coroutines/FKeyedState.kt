@@ -10,6 +10,12 @@ import kotlinx.coroutines.withContext
 class FKeyedState<T> {
    private val _holder: MutableMap<String, KeyedFlow<T>> = mutableMapOf()
 
+   suspend fun size(): Int {
+      return withContext(Dispatchers.preferImmediateMain) {
+         _holder.size
+      }
+   }
+
    suspend fun getOrNull(key: String): T? {
       return withContext(Dispatchers.preferImmediateMain) {
          _holder[key]?.getOrNull()
