@@ -76,7 +76,12 @@ private class SyncableImpl<T>(
                      coroutineScope { onSync() }
                   }
                }.onFailure { error ->
-                  /** 只检查[ReSyncException]，把其他异常当作普通异常，包括[CancellationException] */
+                  /**
+                   * 只检查[ReSyncException]，把其他异常当作普通异常，包括[CancellationException]。
+                   * 因为[sync]方法返回的是一个[Result]，需要知道[onSync]里面发生的所有情况，包括[onSync]里面的取消异常，
+                   * 而调用[sync]方法的协程本身的取消异常是被下面的那个catch捕获，所以不会影响调用[sync]方法的协程正常取消，
+                   * 如果需要重新抛出异常，可以使用扩展方法[syncOrThrow]。
+                   */
                   if (error is ReSyncException) throw error
                }.also { result ->
                   _continuations.resumeAll(result)
