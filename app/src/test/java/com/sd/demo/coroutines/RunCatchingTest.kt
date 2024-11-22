@@ -13,14 +13,17 @@ class RunCatchingTest {
    fun `test runCatchingIgnore`() = runTest {
       val count = AtomicInteger()
       launch {
-         fRunCatchingIgnore {
-            throw CancellationException()
+         runCatching {
+            fRunCatchingIgnore {
+               throw CancellationException("error")
+            }
+         }.also { result ->
+            assertEquals("error", (result.exceptionOrNull() as CancellationException).message)
+            count.incrementAndGet()
          }
-         count.incrementAndGet()
       }.also { job ->
          job.join()
-         assertEquals(true, job.isCancelled)
-         assertEquals(0, count.get())
+         assertEquals(1, count.get())
       }
    }
 
