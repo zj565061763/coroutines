@@ -2,48 +2,58 @@ package com.sd.demo.coroutines
 
 import com.sd.lib.coroutines.fRunCatchingIgnore
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import java.util.concurrent.atomic.AtomicInteger
 
 class RunCatchingTest {
    @Test
    fun `test runCatchingIgnore`() = runTest {
-      val count = AtomicInteger()
-      launch {
-         runCatching {
-            fRunCatchingIgnore {
-               throw CancellationException("error")
-            }
-         }.also { result ->
-            assertEquals("error", (result.exceptionOrNull() as CancellationException).message)
-            count.incrementAndGet()
+      runCatching {
+         fRunCatchingIgnore {
+            throw CancellationException("error")
          }
-      }.also { job ->
-         job.join()
-         assertEquals(1, count.get())
+      }.also { result ->
+         assertEquals("error", (result.exceptionOrNull() as CancellationException).message)
       }
    }
 
    @Test
    fun `test runCatchingIgnore ignore none default`() = runTest {
-      val count = AtomicInteger()
-      launch {
-         runCatching {
-            fRunCatchingIgnore(
-               ignore = { it is IllegalStateException },
-            ) {
-               error("error")
-            }
-         }.also { result ->
-            assertEquals("error", (result.exceptionOrNull() as IllegalStateException).message)
-            count.incrementAndGet()
+      runCatching {
+         fRunCatchingIgnore(
+            ignore = { it is IllegalStateException },
+         ) {
+            error("error")
          }
-      }.also { job ->
-         job.join()
-         assertEquals(1, count.get())
+      }.also { result ->
+         assertEquals("error", (result.exceptionOrNull() as IllegalStateException).message)
+      }
+   }
+
+   @Test
+   fun `test runCatchingIgnore ignore All`() = runTest {
+      runCatching {
+         fRunCatchingIgnore(
+            ignore = { true },
+         ) {
+            error("ignore All")
+         }
+      }.also { result ->
+         assertEquals("ignore All", (result.exceptionOrNull() as IllegalStateException).message)
+      }
+   }
+
+   @Test
+   fun `test runCatchingIgnore ignore None`() = runTest {
+      runCatching {
+         fRunCatchingIgnore(
+            ignore = { false },
+         ) {
+            error("error")
+         }
+      }.also { result ->
+         assertEquals(true, result.isSuccess)
       }
    }
 }
