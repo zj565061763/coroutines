@@ -1,7 +1,6 @@
 package com.sd.lib.coroutines
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.channelFlow
@@ -16,12 +15,8 @@ class FKeyedState<T>(
    /** 获取[key]对应的状态流 */
    fun flowOf(key: String): Flow<T> {
       return channelFlow {
-         withContext(Dispatchers.preferMainImmediate) {
-            _holder.getOrPut(key) { KeyedFlow(key, getDefault(key)) }
-         }.also { flow ->
-            flow.collect { data ->
-               send(data)
-            }
+         collect(key) {
+            send(it)
          }
       }
    }
@@ -47,6 +42,13 @@ class FKeyedState<T>(
       }
    }
 
+   private suspend fun collect(key: String, block: suspend (T) -> Unit) {
+      withContext(Dispatchers.preferMainImmediate) {
+         val holder = _holder.getOrPut(key) { KeyedFlow(key, getDefault(key)) }
+         holder.collect(block)
+      }
+   }
+
    private inner class KeyedFlow(
       private val key: String,
       initialState: T,
@@ -60,9 +62,7 @@ class FKeyedState<T>(
                block(it)
             }
          } finally {
-            withContext(NonCancellable) {
-               releaseIfIdle()
-            }
+            releaseIfIdle()
          }
       }
 
@@ -71,17 +71,15 @@ class FKeyedState<T>(
          _flow.value = state
       }
 
-      suspend fun release() {
+      fun release() {
          _releaseAble = true
          releaseIfIdle()
       }
 
-      private suspend fun releaseIfIdle() {
-         withContext(Dispatchers.preferMainImmediate) {
-            if (_releaseAble && _flow.subscriptionCount.value == 0) {
-               _holder.remove(key).also {
-                  check(it === this@KeyedFlow)
-               }
+      private fun releaseIfIdle() {
+         if (_releaseAble && _flow.subscriptionCount.value == 0) {
+            _holder.remove(key).also {
+               check(it === this@KeyedFlow)
             }
          }
       }
