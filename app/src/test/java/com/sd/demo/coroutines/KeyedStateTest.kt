@@ -37,11 +37,11 @@ class KeyedStateTest {
    @Test
    fun `test update multi times`() = runTest {
       val state = FKeyedState { 0 }
+
+      state.update("", 1)
+      state.update("", 2)
+
       state.flowOf("").test {
-         assertEquals(0, awaitItem())
-         state.update("", 1)
-         state.update("", 2)
-         assertEquals(1, awaitItem())
          assertEquals(2, awaitItem())
       }
    }

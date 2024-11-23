@@ -68,8 +68,15 @@ class KeyedSyncableTest {
       val syncable = FKeyedSyncable<Int>()
       syncable.syncingFlow("").test {
          assertEquals(false, awaitItem())
-         syncable.sync("") { 1 }
+         syncable.sync("") {
+            delay(5_000)
+            1
+         }
+
+         runCurrent()
          assertEquals(true, awaitItem())
+
+         advanceUntilIdle()
          assertEquals(false, awaitItem())
       }
    }
@@ -79,8 +86,15 @@ class KeyedSyncableTest {
       val syncable = FKeyedSyncable<Int>()
       syncable.syncingFlow("").test {
          assertEquals(false, awaitItem())
-         syncable.sync("") { error("sync error") }
+         syncable.sync("") {
+            delay(5_000)
+            error("sync error")
+         }
+
+         runCurrent()
          assertEquals(true, awaitItem())
+
+         advanceUntilIdle()
          assertEquals(false, awaitItem())
       }
    }
