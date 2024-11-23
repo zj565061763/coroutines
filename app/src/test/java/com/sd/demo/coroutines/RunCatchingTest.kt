@@ -1,6 +1,6 @@
 package com.sd.demo.coroutines
 
-import com.sd.lib.coroutines.fRunCatchingIgnore
+import com.sd.lib.coroutines.fRunCatchingEscape
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -8,9 +8,9 @@ import org.junit.Test
 
 class RunCatchingTest {
    @Test
-   fun `test runCatchingIgnore`() = runTest {
+   fun `test runCatchingEscape`() = runTest {
       runCatching {
-         fRunCatchingIgnore {
+         fRunCatchingEscape {
             throw CancellationException("error")
          }
       }.also { result ->
@@ -19,10 +19,10 @@ class RunCatchingTest {
    }
 
    @Test
-   fun `test runCatchingIgnore ignore none default`() = runTest {
+   fun `test runCatchingEscape escape none default`() = runTest {
       runCatching {
-         fRunCatchingIgnore(
-            ignore = { it is IllegalStateException },
+         fRunCatchingEscape(
+            escape = { it is IllegalStateException },
          ) {
             error("error")
          }
@@ -32,23 +32,23 @@ class RunCatchingTest {
    }
 
    @Test
-   fun `test runCatchingIgnore ignore All`() = runTest {
+   fun `test runCatchingEscape escape all`() = runTest {
       runCatching {
-         fRunCatchingIgnore(
-            ignore = { true },
+         fRunCatchingEscape(
+            escape = { true },
          ) {
-            error("ignore All")
+            error("escape all")
          }
       }.also { result ->
-         assertEquals("ignore All", (result.exceptionOrNull() as IllegalStateException).message)
+         assertEquals("escape all", (result.exceptionOrNull() as IllegalStateException).message)
       }
    }
 
    @Test
-   fun `test runCatchingIgnore ignore None`() = runTest {
+   fun `test runCatchingEscape catch all`() = runTest {
       runCatching {
-         fRunCatchingIgnore(
-            ignore = { false },
+         fRunCatchingEscape(
+            escape = { false },
          ) {
             error("error")
          }
