@@ -15,7 +15,7 @@ class FKeyedState<T>(
    /** 获取[key]对应的状态流 */
    fun flowOf(key: String): Flow<T> {
       return channelFlow {
-         collect(key) {
+         collectState(key) {
             send(it)
          }
       }
@@ -23,15 +23,15 @@ class FKeyedState<T>(
 
    /** 更新[key]对应的状态 */
    fun update(key: String, state: T) {
-      updateInternal(key = key, state = state, release = false)
+      updateState(key = key, state = state, release = false)
    }
 
    /** 更新[key]对应的状态，并在更新之后尝试释放该[key] */
    fun updateAndRelease(key: String, state: T) {
-      updateInternal(key = key, state = state, release = true)
+      updateState(key = key, state = state, release = true)
    }
 
-   private fun updateInternal(key: String, state: T, release: Boolean) {
+   private fun updateState(key: String, state: T, release: Boolean) {
       /** 注意，这里要切换到[Dispatchers.Main]保证按调用顺序更新状态 */
       fGlobalLaunch(Dispatchers.Main) {
          val flow = _holder.getOrPut(key) { KeyedFlow(key, state) }
@@ -42,7 +42,7 @@ class FKeyedState<T>(
       }
    }
 
-   private suspend fun collect(key: String, block: suspend (T) -> Unit) {
+   private suspend fun collectState(key: String, block: suspend (T) -> Unit) {
       withContext(Dispatchers.preferMainImmediate) {
          val holder = _holder.getOrPut(key) { KeyedFlow(key, getDefault(key)) }
          holder.collect(block)
