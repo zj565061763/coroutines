@@ -64,7 +64,21 @@ class LoaderTest {
    }
 
    @Test
-   fun `test load when cancelLoad`() = runTest {
+   fun `test load when cancel()`() = runTest {
+      val loader = FLoader()
+      launch {
+         loader.load { delay(Long.MAX_VALUE) }
+      }.also { job ->
+         runCurrent()
+         loader.cancel()
+         advanceUntilIdle()
+         assertEquals(true, job.isCancelled)
+         assertEquals(true, job.isCompleted)
+      }
+   }
+
+   @Test
+   fun `test load when cancelAndJoin()`() = runTest {
       val loader = FLoader()
       launch {
          loader.load { delay(Long.MAX_VALUE) }
