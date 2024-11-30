@@ -2,8 +2,8 @@ package com.sd.lib.coroutines
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +27,12 @@ suspend fun <T> FSyncable<T>.syncOrThrow(): T {
    return sync().getOrThrow()
 }
 
+suspend fun <T> FSyncable<T>.syncOrThrowCancellation(): Result<T> {
+   return sync().onFailure { e ->
+      if (e is CancellationException) throw e
+   }
+}
+
 /**
  * 如果[FSyncable]正在同步中，则会挂起直到同步结束
  */
@@ -36,8 +42,16 @@ suspend fun FSyncable<*>.awaitIdle() {
 
 /**
  * 调用[FSyncable.sync]时，如果[FSyncable]处于空闲状态，则当前协程会切换到主线程执行[onSync]，
- * 如果执行未完成时又有新协程调用[FSyncable.sync]方法，则新协程会挂起等待结果，
- * 注意：[onSync]中的所有异常都会被捕获，包括[CancellationException]
+ * 如果执行未完成时又有新协程调用[FSyncable.sync]，则新协程会挂起等待结果。
+ *
+ * 注意：[onSync]引发的所有异常都会被捕获，包括[CancellationException]，即[onSync]不会导致调用[FSyncable.sync]的协程被取消，
+ * 如果调用[FSyncable.sync]的协程被取消，那一定是外部导致的。
+ *
+ * 这样子设计比较灵活，只要[FSyncable.sync]返回了[Result]，调用处就知道[onSync]发生的所有情况，
+ * 可以根据具体情况再做处理，例如知道[onSync]里面被取消了，可以选择继续往上抛出取消异常，或者处理其他逻辑。
+ *
+ * - 如果希望同步时抛出所有异常，可以使用方法[FSyncable.syncOrThrow]
+ * - 如果希望同步时抛出取消异常，可以使用方法[FSyncable.syncOrThrowCancellation]
  */
 fun <T> FSyncable(
    onSync: suspend () -> T,
@@ -62,37 +76,32 @@ private class SyncableImpl<T>(
       get() = _syncingFlow.asStateFlow()
 
    override suspend fun sync(): Result<T> {
-      if (currentCoroutineContext()[SyncElement]?.syncable === this@SyncableImpl) {
-         throw ReSyncException("Can not call sync in the onSync block.")
-      }
       return withContext(Dispatchers.preferMainImmediate) {
          if (_syncing) {
+            if (currentCoroutineContext()[SyncElement]?.syncable === this@SyncableImpl) {
+               throw ReSyncException("Can not call sync in the onSync block.")
+            }
             _continuations.await()
          } else {
-            try {
-               _syncing = true
-               withContext(SyncElement(this@SyncableImpl)) {
-                  runCatching {
-                     coroutineScope { onSync() }
-                  }
-               }.onFailure { error ->
-                  /**
-                   * 只检查[ReSyncException]，把其他异常当作普通异常，包括[CancellationException]。
-                   * 因为[sync]方法返回的是一个[Result]，需要知道[onSync]里面发生的所有情况，包括[onSync]里面的取消异常，
-                   * 而调用[sync]方法的协程本身的取消异常是被下面的那个catch捕获，所以不会影响调用[sync]方法的协程正常取消，
-                   * 如果需要重新抛出异常，可以使用扩展方法[syncOrThrow]。
-                   */
-                  if (error is ReSyncException) throw error
-               }.also { result ->
-                  _continuations.resumeAll(result)
-               }
-            } catch (e: Throwable) {
-               _continuations.cancelAll()
-               throw e
-            } finally {
-               _syncing = false
-            }
+            doSync()
          }
+      }.also {
+         currentCoroutineContext().ensureActive()
+      }
+   }
+
+   private suspend fun doSync(): Result<T> {
+      return try {
+         _syncing = true
+         withContext(SyncElement(this@SyncableImpl)) {
+            onSync()
+         }.let { data ->
+            Result.success(data).also { _continuations.resumeAll(it) }
+         }
+      } catch (e: Throwable) {
+         Result.failure<T>(e).also { _continuations.resumeAll(it) }
+      } finally {
+         _syncing = false
       }
    }
 }
@@ -103,4 +112,5 @@ private class SyncElement(
    companion object Key : CoroutineContext.Key<SyncElement>
 }
 
+/** 嵌套同步异常 */
 private class ReSyncException(message: String) : IllegalStateException(message)
