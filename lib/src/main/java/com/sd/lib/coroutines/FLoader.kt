@@ -42,10 +42,8 @@ interface FLoader {
       onLoad: suspend () -> T,
    ): Result<T>
 
-   /**
-    * 取消加载
-    */
-   suspend fun cancelLoad()
+   /** 取消加载，并等待取消完成 */
+   suspend fun cancelAndJoin()
 }
 
 /**
@@ -126,7 +124,7 @@ private class LoaderImpl : FLoader {
       }
    }
 
-   override suspend fun cancelLoad() {
+   override suspend fun cancelAndJoin() {
       _mutator.cancelAndJoin()
    }
 }

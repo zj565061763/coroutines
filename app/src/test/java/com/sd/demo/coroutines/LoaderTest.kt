@@ -70,7 +70,7 @@ class LoaderTest {
          loader.load { delay(Long.MAX_VALUE) }
       }.also { job ->
          runCurrent()
-         loader.cancelLoad()
+         loader.cancelAndJoin()
          assertEquals(true, job.isCancelled)
          assertEquals(true, job.isCompleted)
       }
@@ -146,7 +146,7 @@ class LoaderTest {
             loader.load { delay(Long.MAX_VALUE) }
          }.also {
             runCurrent()
-            loader.cancelLoad()
+            loader.cancelAndJoin()
          }
          assertEquals(false, awaitItem())
          assertEquals(true, awaitItem())
