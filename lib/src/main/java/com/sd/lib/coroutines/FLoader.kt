@@ -40,6 +40,9 @@ interface FLoader {
       onLoad: suspend () -> T,
    ): Result<T>
 
+   /** 取消加载 */
+   fun cancel()
+
    /** 取消加载，并等待取消完成 */
    suspend fun cancelAndJoin()
 }
@@ -124,6 +127,10 @@ private class LoaderImpl : FLoader {
    override suspend fun cancelAndJoin() {
       _mutator.cancelAndJoin()
    }
+
+   override fun cancel() {
+      _mutator.cancel()
+   }
 }
 
 //-------------------- Mutator --------------------
@@ -179,6 +186,14 @@ private class FMutator {
          } finally {
             currentMutator.compareAndSet(mutator, null)
          }
+      }
+   }
+
+   fun cancel() {
+      while (true) {
+         val mutator = currentMutator.get() ?: return
+         mutator.cancel()
+         currentMutator.compareAndSet(mutator, null)
       }
    }
 
