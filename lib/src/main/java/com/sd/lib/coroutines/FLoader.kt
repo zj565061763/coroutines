@@ -124,12 +124,12 @@ private class LoaderImpl : FLoader {
       }
    }
 
-   override suspend fun cancelAndJoin() {
-      _mutator.cancelAndJoin()
-   }
-
    override fun cancel() {
       _mutator.cancel()
+   }
+
+   override suspend fun cancelAndJoin() {
+      _mutator.cancelAndJoin()
    }
 }
 
