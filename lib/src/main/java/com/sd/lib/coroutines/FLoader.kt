@@ -3,6 +3,8 @@ package com.sd.lib.coroutines
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -98,25 +100,27 @@ private class LoaderImpl : FLoader {
       notifyLoading: Boolean,
       onLoad: suspend () -> T,
    ): Result<T> {
-      return try {
-         _mutator.mutate {
+      return _mutator.mutate {
+         try {
             if (notifyLoading) {
                _stateFlow.update { it.copy(isLoading = true) }
             }
-            onLoad()
-         }.let { data ->
-            Result.success(data).also {
-               _stateFlow.update { it.copy(result = Result.success(Unit)) }
+            onLoad().let { data ->
+               Result.success(data).also {
+                  currentCoroutineContext().ensureActive()
+                  _stateFlow.update { it.copy(result = Result.success(Unit)) }
+               }
             }
-         }
-      } catch (e: Throwable) {
-         if (e is CancellationException) throw e
-         Result.failure<T>(e).also {
-            _stateFlow.update { it.copy(result = Result.failure(e)) }
-         }
-      } finally {
-         if (notifyLoading) {
-            _stateFlow.update { it.copy(isLoading = false) }
+         } catch (e: Throwable) {
+            if (e is CancellationException) throw e
+            Result.failure<T>(e).also {
+               currentCoroutineContext().ensureActive()
+               _stateFlow.update { it.copy(result = Result.failure(e)) }
+            }
+         } finally {
+            if (notifyLoading) {
+               _stateFlow.update { it.copy(isLoading = false) }
+            }
          }
       }
    }
