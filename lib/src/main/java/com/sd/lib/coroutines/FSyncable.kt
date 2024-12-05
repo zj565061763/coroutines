@@ -33,11 +33,11 @@ suspend fun <T> FSyncable<T>.syncOrThrowCancellation(): Result<T> {
   }
 }
 
-/**
- * 如果[FSyncable]正在同步中，则会挂起直到同步结束
- */
+/** 如果正在同步中，则会挂起直到同步结束 */
 suspend fun FSyncable<*>.awaitIdle() {
-  syncingFlow.first { !it }
+  if (isSyncing) {
+    syncingFlow.first { !it }
+  }
 }
 
 /**
@@ -47,7 +47,7 @@ suspend fun FSyncable<*>.awaitIdle() {
  * 注意：[onSync]引发的所有异常都会被捕获，包括[CancellationException]，即[onSync]不会导致调用[FSyncable.sync]的协程被取消，
  * 如果调用[FSyncable.sync]的协程被取消，那一定是外部导致的。
  *
- * 这样子设计比较灵活，只要[FSyncable.sync]返回了[Result]，调用处就知道[onSync]发生的所有情况，
+ * 这样子设计比较灵活，只要[FSyncable.sync]返回了[Result]，调用处就知道[onSync]发生的所有情况，包括取消情况，
  * 可以根据具体情况再做处理，例如知道[onSync]里面被取消了，可以选择继续往上抛出取消异常，或者处理其他逻辑。
  *
  * - 如果希望同步时抛出所有异常，可以使用方法[FSyncable.syncOrThrow]
