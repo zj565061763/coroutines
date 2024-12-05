@@ -54,8 +54,8 @@ class FKeyedState<T>(
     private val key: String,
     initialState: T,
   ) {
-    private var _releaseAble = true
     private val _flow = MutableStateFlow(initialState)
+    private var _releaseAble = true
 
     suspend fun collect(block: suspend (T) -> Unit) {
       try {
