@@ -41,8 +41,7 @@ android {
 }
 
 dependencies {
-  implementation(libs.androidx.appcompat)
-  implementation(libs.androidx.lifecycle.viewmodel)
+  implementation(project(":lib"))
 
   testImplementation(libs.junit)
   testImplementation(libs.cash.turbine)
@@ -50,5 +49,6 @@ dependencies {
   androidTestImplementation(libs.androidx.test.ext.junit)
   androidTestImplementation(libs.androidx.test.espresso.core)
 
-  implementation(project(":lib"))
+  implementation(libs.androidx.appcompat)
+  implementation(libs.androidx.lifecycle.viewmodel)
 }
