@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.withContext
 
 class FKeyedState<T>(
@@ -18,7 +19,7 @@ class FKeyedState<T>(
       collectState(key) {
         send(it)
       }
-    }
+    }.conflate()
   }
 
   /** 更新[key]对应的状态 */
