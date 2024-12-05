@@ -2,7 +2,7 @@
 
 androidCompileSdk = "34"
 
-androidGradlePlugin = "8.7.2"
+androidGradlePlugin = "8.7.3"
 kotlin = "1.9.25"
 
 [libraries]
@@ -16,7 +16,7 @@ androidx-test-espresso-core = "androidx.test.espresso:espresso-core:3.6.1"
 
 kotlinx-coroutines = "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"
 kotlinx-coroutines-test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1"
-cash-turbine = "app.cash.turbine:turbine:1.1.0"
+cash-turbine = "app.cash.turbine:turbine:1.2.0"
 
 [plugins]
 
