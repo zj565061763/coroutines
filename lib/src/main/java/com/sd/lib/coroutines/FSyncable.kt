@@ -13,31 +13,31 @@ import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
 interface FSyncable<T> {
-   /** 是否正在同步中 */
-   val isSyncing: Boolean
+  /** 是否正在同步中 */
+  val isSyncing: Boolean
 
-   /** 是否正在同步中状态流 */
-   val syncingFlow: Flow<Boolean>
+  /** 是否正在同步中状态流 */
+  val syncingFlow: Flow<Boolean>
 
-   /** 同步并等待结果 */
-   suspend fun sync(): Result<T>
+  /** 同步并等待结果 */
+  suspend fun sync(): Result<T>
 }
 
 suspend fun <T> FSyncable<T>.syncOrThrow(): T {
-   return sync().getOrThrow()
+  return sync().getOrThrow()
 }
 
 suspend fun <T> FSyncable<T>.syncOrThrowCancellation(): Result<T> {
-   return sync().onFailure { e ->
-      if (e is CancellationException) throw e
-   }
+  return sync().onFailure { e ->
+    if (e is CancellationException) throw e
+  }
 }
 
 /**
  * 如果[FSyncable]正在同步中，则会挂起直到同步结束
  */
 suspend fun FSyncable<*>.awaitIdle() {
-   syncingFlow.first { !it }
+  syncingFlow.first { !it }
 }
 
 /**
@@ -54,62 +54,62 @@ suspend fun FSyncable<*>.awaitIdle() {
  * - 如果希望同步时抛出取消异常，可以使用方法[FSyncable.syncOrThrowCancellation]
  */
 fun <T> FSyncable(
-   onSync: suspend () -> T,
+  onSync: suspend () -> T,
 ): FSyncable<T> = SyncableImpl(onSync)
 
 private class SyncableImpl<T>(
-   private val onSync: suspend () -> T,
+  private val onSync: suspend () -> T,
 ) : FSyncable<T> {
-   private val _continuations = FContinuations<Result<T>>()
-   private val _syncingFlow = MutableStateFlow(false)
+  private val _continuations = FContinuations<Result<T>>()
+  private val _syncingFlow = MutableStateFlow(false)
 
-   private var _syncing: Boolean
-      get() = _syncingFlow.value
-      set(value) {
-         _syncingFlow.value = value
+  private var _syncing: Boolean
+    get() = _syncingFlow.value
+    set(value) {
+      _syncingFlow.value = value
+    }
+
+  override val isSyncing: Boolean
+    get() = _syncing
+
+  override val syncingFlow: Flow<Boolean>
+    get() = _syncingFlow.asStateFlow()
+
+  override suspend fun sync(): Result<T> {
+    return withContext(Dispatchers.preferMainImmediate) {
+      if (_syncing) {
+        if (currentCoroutineContext()[SyncElement]?.syncable === this@SyncableImpl) {
+          throw ReSyncException("Can not call sync in the onSync block.")
+        }
+        _continuations.await()
+      } else {
+        doSync()
       }
+    }.also {
+      currentCoroutineContext().ensureActive()
+    }
+  }
 
-   override val isSyncing: Boolean
-      get() = _syncing
-
-   override val syncingFlow: Flow<Boolean>
-      get() = _syncingFlow.asStateFlow()
-
-   override suspend fun sync(): Result<T> {
-      return withContext(Dispatchers.preferMainImmediate) {
-         if (_syncing) {
-            if (currentCoroutineContext()[SyncElement]?.syncable === this@SyncableImpl) {
-               throw ReSyncException("Can not call sync in the onSync block.")
-            }
-            _continuations.await()
-         } else {
-            doSync()
-         }
-      }.also {
-         currentCoroutineContext().ensureActive()
+  private suspend fun doSync(): Result<T> {
+    return try {
+      _syncing = true
+      withContext(SyncElement(this@SyncableImpl)) {
+        onSync()
+      }.let { data ->
+        Result.success(data).also { _continuations.resumeAll(it) }
       }
-   }
-
-   private suspend fun doSync(): Result<T> {
-      return try {
-         _syncing = true
-         withContext(SyncElement(this@SyncableImpl)) {
-            onSync()
-         }.let { data ->
-            Result.success(data).also { _continuations.resumeAll(it) }
-         }
-      } catch (e: Throwable) {
-         Result.failure<T>(e).also { _continuations.resumeAll(it) }
-      } finally {
-         _syncing = false
-      }
-   }
+    } catch (e: Throwable) {
+      Result.failure<T>(e).also { _continuations.resumeAll(it) }
+    } finally {
+      _syncing = false
+    }
+  }
 }
 
 private class SyncElement(
-   val syncable: FSyncable<*>,
+  val syncable: FSyncable<*>,
 ) : AbstractCoroutineContextElement(SyncElement) {
-   companion object Key : CoroutineContext.Key<SyncElement>
+  companion object Key : CoroutineContext.Key<SyncElement>
 }
 
 /** 嵌套同步异常 */

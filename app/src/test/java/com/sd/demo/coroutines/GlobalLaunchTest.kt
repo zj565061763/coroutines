@@ -15,42 +15,42 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class GlobalLaunchTest {
-   @get:Rule
-   val mainDispatcherRule = MainDispatcherRule()
+  @get:Rule
+  val mainDispatcherRule = MainDispatcherRule()
 
-   @Test
-   fun test() = runTest {
-      val flow = MutableSharedFlow<Any?>()
-      flow.test {
-         fGlobalLaunch {
-            flow.emit(1)
-         }.also {
-            assertEquals(1, awaitItem())
-         }
-
-         fGlobalLaunch {
-            throw CancellationException()
-         }.also {
-            runCurrent()
-         }
-
-         fGlobalLaunch {
-            flow.emit(2)
-         }.also {
-            assertEquals(2, awaitItem())
-         }
-
-         fGlobalLaunch {
-            currentCoroutineContext().cancel()
-         }.also {
-            runCurrent()
-         }
-
-         fGlobalLaunch {
-            flow.emit(3)
-         }.also {
-            assertEquals(3, awaitItem())
-         }
+  @Test
+  fun test() = runTest {
+    val flow = MutableSharedFlow<Any?>()
+    flow.test {
+      fGlobalLaunch {
+        flow.emit(1)
+      }.also {
+        assertEquals(1, awaitItem())
       }
-   }
+
+      fGlobalLaunch {
+        throw CancellationException()
+      }.also {
+        runCurrent()
+      }
+
+      fGlobalLaunch {
+        flow.emit(2)
+      }.also {
+        assertEquals(2, awaitItem())
+      }
+
+      fGlobalLaunch {
+        currentCoroutineContext().cancel()
+      }.also {
+        runCurrent()
+      }
+
+      fGlobalLaunch {
+        flow.emit(3)
+      }.also {
+        assertEquals(3, awaitItem())
+      }
+    }
+  }
 }
