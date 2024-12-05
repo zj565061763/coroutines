@@ -84,7 +84,7 @@ private class LoaderImpl : FLoader {
     get() = _stateFlow.asStateFlow()
 
   override val loadingFlow: Flow<Boolean>
-    get() = stateFlow.map { it.isLoading }.distinctUntilChanged()
+    get() = _stateFlow.map { it.isLoading }.distinctUntilChanged()
 
   override val state: FLoader.State
     get() = _stateFlow.value
