@@ -44,7 +44,7 @@ class FKeyedState<T>(
   }
 
   private suspend fun collectState(key: String, block: suspend (T) -> Unit) {
-    withContext(Dispatchers.preferMainImmediate) {
+    withContext(Dispatchers.Main) {
       val holder = _holder.getOrPut(key) { KeyedFlow(key, getDefault(key)) }
       holder.collect(block)
     }
