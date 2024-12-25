@@ -76,7 +76,8 @@ private class SyncableImpl<T>(
     get() = _syncingFlow.asStateFlow()
 
   override suspend fun sync(): Result<T> {
-    return withContext(Dispatchers.preferMainImmediate) {
+    val dispatcher = with(Dispatchers) { runCatching { Main.immediate }.getOrElse { Main } }
+    return withContext(dispatcher) {
       if (_syncing) {
         if (currentCoroutineContext()[SyncElement]?.syncable === this@SyncableImpl) {
           throw ReSyncException("Can not call sync in the onSync block.")

@@ -5,14 +5,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.MainCoroutineDispatcher
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
-
-internal val Dispatchers.preferMainImmediate: MainCoroutineDispatcher
-  get() = runCatching { Main.immediate }.getOrElse { Main }
 
 private val FGlobalScope = CoroutineScope(
   SupervisorJob() + Dispatchers.Main + CoroutineName("FGlobalScope")
