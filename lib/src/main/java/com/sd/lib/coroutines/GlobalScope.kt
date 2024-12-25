@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
-val Dispatchers.preferMainImmediate: MainCoroutineDispatcher
+internal val Dispatchers.preferMainImmediate: MainCoroutineDispatcher
   get() = runCatching { Main.immediate }.getOrElse { Main }
 
 private val FGlobalScope = CoroutineScope(
