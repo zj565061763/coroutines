@@ -15,7 +15,7 @@ private val FGlobalScope = CoroutineScope(
 )
 
 /**
- * 全局协程，如果未指定调度器，则[block]默认在主线程执行
+ * 全局协程，默认调度器[Dispatchers.Main]
  */
 fun fGlobalLaunch(
   context: CoroutineContext = EmptyCoroutineContext,
