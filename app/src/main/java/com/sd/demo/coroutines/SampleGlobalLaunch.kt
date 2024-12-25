@@ -23,7 +23,7 @@ class SampleGlobalLaunch : AppCompatActivity() {
 
 private fun launchGlobalImmediate() {
   logMsg { "1" }
-  fGlobalLaunch {
+  fGlobalLaunch(Dispatchers.Main.immediate) {
     logMsg { "2" }
   }
   logMsg { "3" }
@@ -31,7 +31,7 @@ private fun launchGlobalImmediate() {
 
 private fun launchGlobalDispatched() {
   logMsg { "1" }
-  fGlobalLaunch(Dispatchers.Main) {
+  fGlobalLaunch {
     logMsg { "2" }
   }
   logMsg { "3" }
