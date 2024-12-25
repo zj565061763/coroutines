@@ -259,7 +259,7 @@ class SyncableTest {
       1
     }.also {
       array[0] = it
-      assertEquals(1, it.sync().getOrThrow())
+      it.sync()
     }
   }
 }

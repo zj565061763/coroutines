@@ -100,6 +100,10 @@ private class SyncableImpl<T>(
         Result.success(data).also { _continuations.resumeAll(it) }
       }
     } catch (e: Throwable) {
+      if (e is ReSyncException) {
+        _continuations.cancelAll()
+        throw e
+      }
       Result.failure<T>(e).also { _continuations.resumeAll(it) }
     } finally {
       _syncing = false
