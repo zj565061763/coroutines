@@ -249,21 +249,20 @@ class SyncableTest {
   @Test
   fun `test reSync error`() = runTest {
     val array = arrayOf<FSyncable<*>?>(null)
-    FSyncable {
+
+    val syncable = FSyncable {
       delay(1_000)
       array[0]!!.sync()
       1
-    }.also {
-      array[0] = it
+    }.also { array[0] = it }
 
-      val result = try {
-        it.sync()
-      } catch (e: Throwable) {
-        e
-      }
-
-      assertEquals("Can not call sync in the onSync block.", (result as Throwable).message)
+    val result = try {
+      syncable.sync()
+    } catch (e: Throwable) {
+      e
     }
+
+    assertEquals("Can not call sync in the onSync block.", (result as Throwable).message)
   }
 }
 
