@@ -1,10 +1,12 @@
 package com.sd.lib.coroutines
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class FKeyedState<T>(
@@ -12,6 +14,7 @@ class FKeyedState<T>(
   private val getDefault: (key: String) -> T,
 ) {
   private val _holder: MutableMap<String, ReleaseAbleFlow<T>> = mutableMapOf()
+  private val _mainScope = MainScope()
 
   /** 获取[key]对应的状态流 */
   fun flowOf(key: String): Flow<T> {
@@ -33,8 +36,7 @@ class FKeyedState<T>(
   }
 
   private fun updateState(key: String, state: T, release: Boolean) {
-    /** 注意，这里要切换到[Dispatchers.Main]保证按调用顺序更新状态 */
-    fGlobalLaunch(Dispatchers.Main) {
+    _mainScope.launch {
       val flow = _holder.getOrPut(key) { newFlow(key, state) }
       flow.update(state)
       if (release) {
