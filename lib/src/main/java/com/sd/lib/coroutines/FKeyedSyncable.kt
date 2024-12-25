@@ -8,13 +8,6 @@ class FKeyedSyncable<T> {
   private val _holder = mutableMapOf<String, FSyncable<T>>()
   private val _loadingState = FKeyedState { false }
 
-  suspend fun syncOrThrow(
-    key: String,
-    block: suspend () -> T,
-  ): T {
-    return sync(key, block).getOrThrow()
-  }
-
   suspend fun sync(
     key: String,
     block: suspend () -> T,
@@ -49,3 +42,8 @@ class FKeyedSyncable<T> {
     }
   }
 }
+
+suspend fun <T> FKeyedSyncable<T>.syncOrThrow(
+  key: String,
+  block: suspend () -> T,
+): T = sync(key, block).getOrThrow()
