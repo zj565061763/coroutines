@@ -11,7 +11,7 @@ class FKeyedState<T>(
   /** 获取默认值(主线程) */
   private val getDefault: (key: String) -> T,
 ) {
-  private val _holder: MutableMap<String, KeyedFlow> = mutableMapOf()
+  private val _holder: MutableMap<String, ReleaseAbleFlow<T>> = mutableMapOf()
 
   /** 获取[key]对应的状态流 */
   fun flowOf(key: String): Flow<T> {
@@ -35,7 +35,7 @@ class FKeyedState<T>(
   private fun updateState(key: String, state: T, release: Boolean) {
     /** 注意，这里要切换到[Dispatchers.Main]保证按调用顺序更新状态 */
     fGlobalLaunch(Dispatchers.Main) {
-      val flow = _holder.getOrPut(key) { KeyedFlow(key, state) }
+      val flow = _holder.getOrPut(key) { newFlow(key, state) }
       flow.update(state)
       if (release) {
         flow.release()
@@ -45,14 +45,21 @@ class FKeyedState<T>(
 
   private suspend fun collectState(key: String, block: suspend (T) -> Unit) {
     withContext(Dispatchers.Main) {
-      val holder = _holder.getOrPut(key) { KeyedFlow(key, getDefault(key)) }
-      holder.collect(block)
+      val flow = _holder.getOrPut(key) { newFlow(key, getDefault(key)) }
+      flow.collect(block)
     }
   }
 
-  private inner class KeyedFlow(
-    private val key: String,
+  private fun newFlow(key: String, initialState: T): ReleaseAbleFlow<T> {
+    return ReleaseAbleFlow(
+      initialState = initialState,
+      onIdle = { _holder.remove(key) },
+    )
+  }
+
+  private class ReleaseAbleFlow<T>(
     initialState: T,
+    private val onIdle: () -> Unit,
   ) {
     private val _flow = MutableStateFlow(initialState)
     private var _releaseAble = true
@@ -79,9 +86,7 @@ class FKeyedState<T>(
 
     private fun releaseIfIdle() {
       if (_releaseAble && _flow.subscriptionCount.value == 0) {
-        _holder.remove(key).also {
-          check(it === this@KeyedFlow)
-        }
+        onIdle()
       }
     }
   }
