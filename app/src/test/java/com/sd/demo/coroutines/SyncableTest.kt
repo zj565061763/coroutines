@@ -251,15 +251,18 @@ class SyncableTest {
     val array = arrayOf<FSyncable<*>?>(null)
     FSyncable {
       delay(1_000)
-      runCatching {
-        array[0]!!.sync()
-      }.also { result ->
-        assertEquals("Can not call sync in the onSync block.", result.exceptionOrNull()!!.message)
-      }
+      array[0]!!.sync()
       1
     }.also {
       array[0] = it
-      it.sync()
+
+      val result = try {
+        it.sync()
+      } catch (e: Throwable) {
+        e
+      }
+
+      assertEquals("Can not call sync in the onSync block.", (result as Throwable).message)
     }
   }
 }
