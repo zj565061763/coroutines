@@ -33,8 +33,8 @@ class FKeyedSyncable<T> {
     block: suspend () -> T,
   ): FSyncable<T> {
     return FSyncable {
+      _loadingState.update(key, state = true)
       try {
-        _loadingState.update(key, state = true)
         block()
       } finally {
         _loadingState.updateAndRelease(key, state = false)
