@@ -15,7 +15,7 @@ internal val Dispatchers.preferMainImmediate: MainCoroutineDispatcher
   get() = runCatching { Main.immediate }.getOrElse { Main }
 
 private val FGlobalScope = CoroutineScope(
-  SupervisorJob() + Dispatchers.preferMainImmediate + CoroutineName("FGlobalScope")
+  SupervisorJob() + Dispatchers.Main + CoroutineName("FGlobalScope")
 )
 
 /**
